@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '../lib/supabaseClient';
+import { csvExportieren } from '../lib/csvExport';
 
 const LEER_FORMULAR = {
   id: null,
@@ -81,6 +82,24 @@ export default function CustomersPage() {
     k.name.toLowerCase().includes(suche.toLowerCase())
   );
 
+  function csvHerunterladen() {
+    csvExportieren(
+      'kunden-export.csv',
+      ['Name', 'Kundentyp', 'Leitweg-ID', 'Straße', 'PLZ', 'Ort', 'E-Mail', 'Telefon', 'Notiz'],
+      gefilterteKunden.map((k) => [
+        k.name,
+        k.kundentyp === 'oeffentlich' ? 'Öffentlich' : 'Privat',
+        k.leitweg_id,
+        k.strasse,
+        k.plz,
+        k.ort,
+        k.email,
+        k.telefon,
+        k.notiz,
+      ])
+    );
+  }
+
   return (
     <div className="p-8 max-w-5xl">
       <div className="flex items-center justify-between mb-6">
@@ -96,13 +115,21 @@ export default function CustomersPage() {
         </button>
       </div>
 
-      <input
-        type="text"
-        placeholder="Kunde suchen…"
-        value={suche}
-        onChange={(e) => setSuche(e.target.value)}
-        className="w-full max-w-xs mb-4 rounded-lg border border-tanne-900/15 bg-white/70 px-3 py-2 text-sm"
-      />
+      <div className="flex items-center gap-3 mb-4">
+        <input
+          type="text"
+          placeholder="Kunde suchen…"
+          value={suche}
+          onChange={(e) => setSuche(e.target.value)}
+          className="w-full max-w-xs rounded-lg border border-tanne-900/15 bg-white/70 px-3 py-2 text-sm"
+        />
+        <button
+          onClick={csvHerunterladen}
+          className="text-xs font-medium text-tanne-700 hover:underline whitespace-nowrap"
+        >
+          CSV exportieren
+        </button>
+      </div>
 
       {ladeVorgang ? (
         <p className="text-sm text-tanne-700/60">Lade Kunden…</p>

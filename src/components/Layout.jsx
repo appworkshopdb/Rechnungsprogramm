@@ -44,9 +44,14 @@ export default function Layout() {
 
         <nav className="flex-1 px-3 py-4 space-y-1">
           <NavItem to="/rechnungen">Rechnungen</NavItem>
+          <NavItem to="/lieferscheine">Lieferscheine</NavItem>
+          <NavItem to="/gutschriften">Gutschriften</NavItem>
+          <NavItem to="/mahnungen">Mahnungen</NavItem>
           <NavItem to="/vorlagen">Vorlagen</NavItem>
           <NavItem to="/kunden">Kunden</NavItem>
           <NavItem to="/leistungen">Leistungen</NavItem>
+          <NavItem to="/ausgaben">Ausgaben</NavItem>
+          <NavItem to="/uebersicht">Übersicht</NavItem>
         </nav>
 
         <div className="px-4 py-4 border-t border-tanne-900/10">
