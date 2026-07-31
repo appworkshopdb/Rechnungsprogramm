@@ -14,6 +14,8 @@ import CreditNoteEditor from './components/CreditNoteEditor';
 import RemindersPage from './components/RemindersPage';
 import ExpensesPage from './components/ExpensesPage';
 import OverviewPage from './components/OverviewPage';
+import TimeEntriesPage from './components/TimeEntriesPage';
+import CompanySettingsPage from './components/CompanySettingsPage';
 
 function AppInhalt() {
   const { session, ladeVorgang } = useAuth();
@@ -46,6 +48,8 @@ function AppInhalt() {
         <Route path="/leistungen" element={<ServicesPage />} />
         <Route path="/ausgaben" element={<ExpensesPage />} />
         <Route path="/uebersicht" element={<OverviewPage />} />
+        <Route path="/zeiterfassung" element={<TimeEntriesPage />} />
+        <Route path="/einstellungen" element={<CompanySettingsPage />} />
         <Route path="*" element={<Navigate to="/rechnungen" replace />} />
       </Route>
     </Routes>
