@@ -19,10 +19,10 @@ nicht auf GitHub. Als Vorlage für neue Umgebungen dient `.env.example`.
 
 ## Datenbank-Schema
 
-Liegt in `supabase/schema.sql` (Phase 1: Kunden, Leistungen, Vorlagen,
-Rechnungen) und `supabase/migration_phase2.sql` (Phase 2: Lieferscheine,
-Gutschriften, Mahnungen, Ausgaben). Beide im Supabase SQL-Editor
-**in dieser Reihenfolge** einmalig ausführen, bevor die App benutzt wird.
+Liegt in `supabase/schema.sql` (Phase 1), `supabase/migration_phase2.sql`
+(Phase 2) und `supabase/migration_phase3.sql` (Phase 3: Firmeneinstellungen,
+Zeiterfassung). Alle drei im Supabase SQL-Editor **in dieser Reihenfolge**
+einmalig ausführen, bevor die App benutzt wird.
 
 Erster Nutzer bekommt automatisch die Rolle `mitarbeiter`. Um jemanden zum
 Admin zu machen:
@@ -106,10 +106,37 @@ direktem Aufruf einer Unterseite einen 404-Fehler zeigen würde.
   Ausgaben nach Monat für ein wählbares Jahr, inkl. CSV-Export.
 - **CSV-Export** auf den Seiten Kunden, Rechnungen und Übersicht.
 
+## Phase 3 – neu hinzugekommen
+
+- **Firmeneinstellungen** (`/einstellungen`, nur admin) – Firmenname,
+  Adresse, USt-IdNr., IBAN/BIC. Erscheinen jetzt auf jeder Rechnung statt
+  eines Platzhaltertexts.
+- **XRechnung-XML-Export** – auf jeder freigegebenen Rechnung über den
+  Button "XRechnung (XML)". Erzeugt eine UBL-2.1-konforme XML-Datei nach
+  den EN16931-Kernfeldern, komplett im Browser (keine Serverfunktion
+  nötig). **Wichtiger Hinweis:** Das ist eine vereinfachte Umsetzung der
+  Kernfelder — vor dem produktiven Versand an Forstämter/Gemeinden
+  unbedingt mit einem offiziellen Validator prüfen, z.B. dem
+  [KoSIT-Validator](https://github.com/itplr-kosit/validator) oder über
+  https://xrechnung.de. Bei Kunden mit Kundentyp "Öffentlich" wird die
+  Leitweg-ID automatisch als Buyer-Reference (BT-10) eingetragen.
+- **Zeiterfassung** (`/zeiterfassung`) – Stunden pro Kunde/Leistung
+  erfassen, mehrere offene Einträge desselben Kunden auswählen und direkt
+  in eine neue Rechnung übernehmen.
+- **Vereinfachter Buchhaltungsexport** (Button auf der Rechnungsseite) –
+  CSV mit Netto/USt/Brutto pro Rechnung für den Steuerberater. **Kein**
+  offiziell zertifiziertes DATEV-Format (das verlangt eine exakte
+  Kopfzeilenstruktur mit Berater-/Mandantennummer) — im Zweifel mit dem
+  Steuerberater abstimmen, ob das reicht oder eine Anpassung nötig ist.
+
 ## Bekannte Grenzen (weiterhin offen)
 
 - Kein automatisierter E-Mail-Versand oder automatisierte
   Zahlungserinnerungen — Mahnungen werden manuell ausgelöst.
-- XRechnung-XML-Export ist noch nicht implementiert.
+- Zeiterfassungseinträge werden nach "In Rechnung übernehmen" nicht
+  automatisch als "abgerechnet" markiert — das müsste bei Bedarf noch
+  verknüpft werden.
 - PDF-Export läuft über den Browser-Druckdialog, nicht über eine dedizierte
   PDF-Bibliothek.
+- Keine Mandantenfähigkeit (mehrere Firmen) und keine Mehrwährungsfunktion
+  — bewusst zurückgestellt, da aktuell nicht benötigt.
