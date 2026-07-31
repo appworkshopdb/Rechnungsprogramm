@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { supabase } from '../lib/supabaseClient';
 import { useAuth } from '../lib/AuthContext';
 import { csvExportieren } from '../lib/csvExport';
+import { datevExportErzeugen } from '../lib/datevExport';
 
 const STATUS_LABEL = {
   entwurf: { text: 'Entwurf', klasse: 'bg-tanne-900/10 text-tanne-900/70' },
@@ -40,7 +41,7 @@ export default function InvoicesPage() {
     laden();
   }
 
-  async function csvHerunterladen() {
+  async function summenProRechnungBerechnen() {
     const ids = rechnungen.map((r) => r.id);
     const { data: items } = await supabase
       .from('invoice_items')
@@ -57,6 +58,11 @@ export default function InvoicesPage() {
       summenProRechnung[it.invoice_id].netto += netto;
       summenProRechnung[it.invoice_id].brutto += brutto;
     });
+    return summenProRechnung;
+  }
+
+  async function csvHerunterladen() {
+    const summenProRechnung = await summenProRechnungBerechnen();
 
     csvExportieren(
       'rechnungen-export.csv',
@@ -72,6 +78,11 @@ export default function InvoicesPage() {
     );
   }
 
+  async function datevHerunterladen() {
+    const summenProRechnung = await summenProRechnungBerechnen();
+    datevExportErzeugen(rechnungen, summenProRechnung);
+  }
+
   return (
     <div className="p-8 max-w-5xl">
       <div className="flex items-center justify-between mb-6">
@@ -85,6 +96,12 @@ export default function InvoicesPage() {
             className="rounded-lg border border-tanne-900/20 text-tanne-900 text-sm font-medium px-4 py-2 hover:bg-tanne-900/5"
           >
             CSV exportieren
+          </button>
+          <button
+            onClick={datevHerunterladen}
+            className="rounded-lg border border-tanne-900/20 text-tanne-900 text-sm font-medium px-4 py-2 hover:bg-tanne-900/5"
+          >
+            Buchhaltungsexport
           </button>
           <Link
             to="/rechnungen/neu"

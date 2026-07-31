@@ -47,11 +47,13 @@ export default function Layout() {
           <NavItem to="/lieferscheine">Lieferscheine</NavItem>
           <NavItem to="/gutschriften">Gutschriften</NavItem>
           <NavItem to="/mahnungen">Mahnungen</NavItem>
+          <NavItem to="/zeiterfassung">Zeiterfassung</NavItem>
           <NavItem to="/vorlagen">Vorlagen</NavItem>
           <NavItem to="/kunden">Kunden</NavItem>
           <NavItem to="/leistungen">Leistungen</NavItem>
           <NavItem to="/ausgaben">Ausgaben</NavItem>
           <NavItem to="/uebersicht">Übersicht</NavItem>
+          {rolle === 'admin' && <NavItem to="/einstellungen">Firmeneinstellungen</NavItem>}
         </nav>
 
         <div className="px-4 py-4 border-t border-tanne-900/10">

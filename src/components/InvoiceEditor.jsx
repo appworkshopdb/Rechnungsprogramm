@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams, useLocation } from 'react-router-dom';
 import { supabase } from '../lib/supabaseClient';
 import { useAuth } from '../lib/AuthContext';
+import { xrechnungXmlErzeugen, xmlHerunterladen } from '../lib/xrechnung';
 
 const EINHEIT_LABEL = {
   stunde: 'Std.',
@@ -34,6 +35,7 @@ export default function InvoiceEditor() {
 
   const [kunden, setKunden] = useState([]);
   const [leistungen, setLeistungen] = useState([]);
+  const [firma, setFirma] = useState(null);
   const [rechnung, setRechnung] = useState({
     id: null,
     customer_id: '',
@@ -55,12 +57,17 @@ export default function InvoiceEditor() {
 
   useEffect(() => {
     async function grunddatenLaden() {
-      const [{ data: k }, { data: l }] = await Promise.all([
-        supabase.from('customers').select('id, name').order('name'),
+      const [{ data: k }, { data: l }, { data: f }] = await Promise.all([
+        supabase
+          .from('customers')
+          .select('id, name, strasse, plz, ort, kundentyp, leitweg_id')
+          .order('name'),
         supabase.from('services').select('*').eq('aktiv', true).order('bezeichnung'),
+        supabase.from('company_settings').select('*').eq('id', 1).single(),
       ]);
       setKunden(k || []);
       setLeistungen(l || []);
+      setFirma(f || null);
     }
     grunddatenLaden();
   }, []);
@@ -245,6 +252,13 @@ export default function InvoiceEditor() {
     navigate(`/rechnungen/${rechnungId}`, { replace: true });
   }
 
+  function xrechnungHerunterladen() {
+    const kunde = kunden.find((k) => k.id === rechnung.customer_id);
+    if (!kunde || !firma) return;
+    const xml = xrechnungXmlErzeugen(rechnung, positionen, kunde, firma);
+    xmlHerunterladen(`${rechnung.nummer || 'rechnung'}.xml`, xml);
+  }
+
   if (ladeVorgang) {
     return <div className="p-8 text-sm text-tanne-700/60">Lade…</div>;
   }
@@ -282,12 +296,20 @@ export default function InvoiceEditor() {
             </button>
           )}
           {gesperrt && (
-            <button
-              onClick={() => window.print()}
-              className="rounded-lg bg-tanne-800 text-papier text-sm font-medium px-4 py-2 hover:bg-tanne-700"
-            >
-              Drucken / Als PDF speichern
-            </button>
+            <>
+              <button
+                onClick={xrechnungHerunterladen}
+                className="rounded-lg border border-tanne-900/20 text-tanne-900 text-sm font-medium px-4 py-2 hover:bg-tanne-900/5"
+              >
+                XRechnung (XML)
+              </button>
+              <button
+                onClick={() => window.print()}
+                className="rounded-lg bg-tanne-800 text-papier text-sm font-medium px-4 py-2 hover:bg-tanne-700"
+              >
+                Drucken / Als PDF speichern
+              </button>
+            </>
           )}
         </div>
       </div>
@@ -298,8 +320,14 @@ export default function InvoiceEditor() {
       <div className="print-area bg-white rounded-xl border border-tanne-900/10 shadow-sm p-8">
         <div className="flex justify-between mb-8">
           <div>
-            <p className="font-display text-lg font-semibold text-tanne-900">Forstservice</p>
-            <p className="text-xs text-tanne-700/60 mt-1">[Firmenadresse hier ergänzen]</p>
+            <p className="font-display text-lg font-semibold text-tanne-900">
+              {firma?.firmenname || 'Forstservice'}
+            </p>
+            <p className="text-xs text-tanne-700/60 mt-1">
+              {firma?.strasse && <>{firma.strasse}<br /></>}
+              {(firma?.plz || firma?.ort) && <>{firma.plz} {firma.ort}<br /></>}
+              {firma?.ust_idnr && <>USt-IdNr.: {firma.ust_idnr}</>}
+            </p>
           </div>
           <div className="text-right text-sm">
             <p className="text-tanne-900/60">Rechnungsnummer</p>
