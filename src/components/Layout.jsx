@@ -32,9 +32,7 @@ export default function Layout() {
       <aside className="no-print w-60 shrink-0 border-r border-tanne-900/10 bg-white/60 flex flex-col">
         <div className="px-4 py-5 border-b border-tanne-900/10">
           <div className="flex items-center gap-2">
-            <div className="h-8 w-8 rounded-full bg-tanne-800 text-papier flex items-center justify-center font-display text-sm">
-              F
-            </div>
+            <img src="/logo.svg" alt="Forstservice Elsasser Logo" className="h-9 w-auto shrink-0" />
             <div>
               <p className="font-display font-semibold text-tanne-900 leading-tight">Forstservice</p>
               <p className="text-[11px] text-tanne-700/60 leading-tight">Rechnungsprogramm</p>

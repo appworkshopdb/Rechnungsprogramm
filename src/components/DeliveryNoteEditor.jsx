@@ -241,9 +241,12 @@ export default function DeliveryNoteEditor() {
 
       <div className="print-area bg-white rounded-xl border border-tanne-900/10 shadow-sm p-8">
         <div className="flex justify-between mb-8">
-          <div>
-            <p className="font-display text-lg font-semibold text-tanne-900">Forstservice</p>
-            <p className="text-xs text-tanne-700/60 mt-1">Lieferschein</p>
+          <div className="flex items-center gap-4">
+            <img src="/logo.svg" alt="Forstservice Elsasser Logo" className="h-16 w-auto shrink-0" />
+            <div>
+              <p className="font-display text-lg font-semibold text-tanne-900">Forstservice</p>
+              <p className="text-xs text-tanne-700/60 mt-1">Lieferschein</p>
+            </div>
           </div>
           <div className="text-right text-sm">
             <p className="text-tanne-900/60">Lieferschein-Nr.</p>
