@@ -1,5 +1,6 @@
 import { NavLink, Outlet } from 'react-router-dom';
 import { useAuth } from '../lib/AuthContext';
+import logoUrl from '../assets/logo.svg';
 
 const ROLLEN_LABEL = {
   admin: 'Admin',
@@ -32,7 +33,7 @@ export default function Layout() {
       <aside className="no-print w-60 shrink-0 border-r border-tanne-900/10 bg-white/60 flex flex-col">
         <div className="px-4 py-5 border-b border-tanne-900/10">
           <div className="flex items-center gap-2">
-            <img src="/logo.svg" alt="Forstservice Elsasser Logo" className="h-9 w-auto shrink-0" />
+            <img src={logoUrl} alt="Forstservice Elsasser Logo" className="h-9 w-auto shrink-0" />
             <div>
               <p className="font-display font-semibold text-tanne-900 leading-tight">Forstservice</p>
               <p className="text-[11px] text-tanne-700/60 leading-tight">Rechnungsprogramm</p>
