@@ -139,6 +139,35 @@ direktem Aufruf einer Unterseite einen 404-Fehler zeigen würde.
   1-GB-Speicherkontingent im Supabase-Free-Tier). Löschen ist admin/
   buchhaltung vorbehalten.
 
+## Google-Drive-Spiegelung (optional)
+
+Hochgeladene Anhänge werden zusätzlich automatisch in ein zentrales
+Google-Drive-Verzeichnis gespiegelt (über ein Google-Service-Konto und
+eine Supabase Edge Function, `supabase/functions/mirror-to-drive`).
+
+**Einrichtung (einmalig):**
+
+1. Google-Cloud-Projekt anlegen, Google Drive API aktivieren, Service-Konto
+   erstellen, JSON-Schlüssel herunterladen (siehe Anleitung im Chat-Verlauf
+   bzw. [Google-Cloud-Console](https://console.cloud.google.com)).
+2. In Google Drive einen Hauptordner anlegen, Unterordner für Kunden,
+   Rechnungen, Lieferscheine, und den Hauptordner mit der
+   `client_email` des Service-Kontos als **Bearbeiter** teilen.
+3. Edge Function deployen: Supabase-Dashboard → **Edge Functions** →
+   "Deploy a new function" → "Via Editor" → Code aus
+   `supabase/functions/mirror-to-drive/index.ts` einfügen → Deploy.
+4. Secrets setzen: Supabase-Dashboard → **Edge Functions** → Secrets:
+   - `GOOGLE_CLIENT_EMAIL`
+   - `GOOGLE_PRIVATE_KEY` (kompletter Wert inkl. BEGIN/END-Zeilen)
+   - `GDRIVE_FOLDER_CUSTOMER`, `GDRIVE_FOLDER_INVOICE`,
+     `GDRIVE_FOLDER_DELIVERY_NOTE` (jeweils die Ordner-ID)
+
+**Wichtig:** Schlägt die Drive-Spiegelung fehl (z.B. Secrets falsch,
+Google-Dienst down), bleibt die Datei trotzdem sicher in Supabase Storage
+gespeichert — die Spiegelung ist ein Zusatz, kein Ersatz. Bei einem Fehler
+erscheint ein Hinweis in der App, aber der Upload selbst gilt als
+erfolgreich.
+
 ## Bekannte Grenzen (weiterhin offen)
 
 - Kein automatisierter E-Mail-Versand oder automatisierte
