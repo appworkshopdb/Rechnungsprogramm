@@ -16,8 +16,28 @@ export default function CompanySettingsPage() {
       .select('*')
       .eq('id', 1)
       .single()
-      .then(({ data }) => {
-        setDaten(data);
+      .then(({ data, error }) => {
+        if (error) {
+          setFehler(
+            'Firmeneinstellungen konnten nicht geladen werden. Ist migration_phase3.sql bereits ' +
+              'im Supabase SQL-Editor ausgeführt worden? Details: ' + error.message
+          );
+        }
+        setDaten(
+          data || {
+            firmenname: '',
+            strasse: '',
+            plz: '',
+            ort: '',
+            land: 'Deutschland',
+            telefon: '',
+            email: '',
+            ust_idnr: '',
+            steuernummer: '',
+            iban: '',
+            bic: '',
+          }
+        );
         setLadeVorgang(false);
       });
   }, []);
@@ -59,6 +79,7 @@ export default function CompanySettingsPage() {
     return (
       <div className="p-8 max-w-2xl">
         <h1 className="font-display text-2xl font-semibold text-tanne-900 mb-2">Firmeneinstellungen</h1>
+        {fehler && <p className="text-sm text-rost mb-3">{fehler}</p>}
         <p className="text-sm text-tanne-700/70">
           Nur Admins können die Firmeneinstellungen bearbeiten. Aktuelle Daten:
         </p>
