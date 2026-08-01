@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { supabase } from '../lib/supabaseClient';
 import { useAuth } from '../lib/AuthContext';
+import AttachmentsPanel from './AttachmentsPanel';
 
 const EINHEIT_LABEL = {
   stunde: 'Std.',
@@ -382,6 +383,10 @@ export default function DeliveryNoteEditor() {
             rows={2}
             className="w-full rounded-lg border border-tanne-900/15 px-3 py-2 text-sm disabled:opacity-60"
           />
+        </div>
+
+        <div className="mt-6 no-print border-t border-tanne-900/10 pt-4">
+          <AttachmentsPanel entityType="delivery_note" entityId={lieferschein.id} />
         </div>
       </div>
     </div>

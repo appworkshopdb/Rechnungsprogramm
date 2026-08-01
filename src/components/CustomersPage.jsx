@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '../lib/supabaseClient';
 import { csvExportieren } from '../lib/csvExport';
+import AttachmentsPanel from './AttachmentsPanel';
 
 const LEER_FORMULAR = {
   id: null,
@@ -282,6 +283,10 @@ export default function CustomersPage() {
               </div>
 
               {fehler && <p className="text-sm text-rost">{fehler}</p>}
+
+              <div className="border-t border-tanne-900/10 pt-4">
+                <AttachmentsPanel entityType="customer" entityId={formular.id} />
+              </div>
 
               <div className="flex justify-end gap-2 pt-2">
                 <button
