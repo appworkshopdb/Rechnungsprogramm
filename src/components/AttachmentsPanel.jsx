@@ -6,6 +6,7 @@ import {
   anhangHerunterladen,
   anhangLoeschen,
   dateigroesseFormatieren,
+  driveSpiegelUpload,
 } from '../lib/attachments';
 
 /**
@@ -42,6 +43,7 @@ export default function AttachmentsPanel({ entityType, entityId }) {
     if (dateien.length === 0) return;
     setFehler(null);
     setLaedtHoch(true);
+    let driveWarnung = null;
     try {
       for (const datei of dateien) {
         // 10 MB Grenze pro Datei — schont das 1 GB-Kontingent im Supabase-Free-Tier
@@ -50,8 +52,16 @@ export default function AttachmentsPanel({ entityType, entityId }) {
           continue;
         }
         await anhangHochladen(entityType, entityId, datei, profile?.id);
+        try {
+          await driveSpiegelUpload(entityType, datei);
+        } catch (driveErr) {
+          // Datei ist in der App bereits sicher gespeichert — die
+          // Drive-Spiegelung ist ein Zusatz, kein Grund zum Abbrechen.
+          driveWarnung = `Hinweis: "${datei.name}" wurde gespeichert, aber nicht zu Google Drive gespiegelt (${driveErr.message}).`;
+        }
       }
       await laden();
+      if (driveWarnung) setFehler(driveWarnung);
     } catch (err) {
       setFehler('Hochladen fehlgeschlagen: ' + err.message);
     }
