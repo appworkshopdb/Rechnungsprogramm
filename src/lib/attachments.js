@@ -63,9 +63,13 @@ function dateiAlsBase64Lesen(file) {
 }
 
 /**
+ * AKTUELL UNGENUTZT (Stand: nur mit Google Workspace / Shared Drive nutzbar).
+ * Ein Service-Konto kann in ein normales Gmail-"Meine Ablage" nicht hochladen
+ * ("Service Accounts do not have storage quota"). Bei späterem Umstieg auf
+ * Google Workspace: Zielordner als Shared Drive anlegen, dann kann der
+ * Aufruf in AttachmentsPanel.jsx wieder aktiviert werden.
+ *
  * Spiegelt eine Datei zusätzlich in den passenden Google-Drive-Ordner.
- * Nicht kritisch: schlägt das fehl, bleibt die Datei trotzdem in der App
- * gespeichert (Aufrufer sollte den Fehler nur als Hinweis anzeigen).
  */
 export async function driveSpiegelUpload(entityType, file) {
   const inhaltBase64 = await dateiAlsBase64Lesen(file);
@@ -77,7 +81,20 @@ export async function driveSpiegelUpload(entityType, file) {
       inhaltBase64,
     },
   });
-  if (error) throw error;
+  if (error) {
+    // Der generische Fehler ("non-2xx status code") verrät nichts —
+    // die eigentliche Fehlermeldung steckt im Response-Body der Function.
+    let detail = error.message;
+    try {
+      if (error.context && typeof error.context.json === 'function') {
+        const body = await error.context.json();
+        if (body?.error) detail = body.error;
+      }
+    } catch {
+      // Body konnte nicht gelesen werden — bei der generischen Meldung bleiben
+    }
+    throw new Error(detail);
+  }
   if (data && data.ok === false) throw new Error(data.error || 'Unbekannter Fehler');
   return data;
 }
