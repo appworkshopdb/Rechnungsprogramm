@@ -48,6 +48,40 @@ export async function anhangLoeschen(id, storagePath) {
   if (error) throw error;
 }
 
+function dateiAlsBase64Lesen(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      // readAsDataURL liefert "data:mime/type;base64,XXXX" — nur den Teil nach dem Komma behalten
+      const ergebnis = reader.result;
+      const base64 = typeof ergebnis === 'string' ? ergebnis.split(',')[1] : '';
+      resolve(base64);
+    };
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
+
+/**
+ * Spiegelt eine Datei zusätzlich in den passenden Google-Drive-Ordner.
+ * Nicht kritisch: schlägt das fehl, bleibt die Datei trotzdem in der App
+ * gespeichert (Aufrufer sollte den Fehler nur als Hinweis anzeigen).
+ */
+export async function driveSpiegelUpload(entityType, file) {
+  const inhaltBase64 = await dateiAlsBase64Lesen(file);
+  const { data, error } = await supabase.functions.invoke('mirror-to-drive', {
+    body: {
+      entityType,
+      dateiname: file.name,
+      mimeType: file.type,
+      inhaltBase64,
+    },
+  });
+  if (error) throw error;
+  if (data && data.ok === false) throw new Error(data.error || 'Unbekannter Fehler');
+  return data;
+}
+
 export function dateigroesseFormatieren(bytes) {
   if (!bytes) return '';
   if (bytes < 1024) return `${bytes} B`;
