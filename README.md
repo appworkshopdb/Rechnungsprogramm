@@ -20,9 +20,10 @@ nicht auf GitHub. Als Vorlage für neue Umgebungen dient `.env.example`.
 ## Datenbank-Schema
 
 Liegt in `supabase/schema.sql` (Phase 1), `supabase/migration_phase2.sql`
-(Phase 2) und `supabase/migration_phase3.sql` (Phase 3: Firmeneinstellungen,
-Zeiterfassung). Alle drei im Supabase SQL-Editor **in dieser Reihenfolge**
-einmalig ausführen, bevor die App benutzt wird.
+(Phase 2), `supabase/migration_phase3.sql` (Phase 3) und
+`supabase/migration_phase4.sql` (Phase 4: Datei-Anhänge). Alle vier im
+Supabase SQL-Editor **in dieser Reihenfolge** einmalig ausführen, bevor
+die App benutzt wird.
 
 Erster Nutzer bekommt automatisch die Rolle `mitarbeiter`. Um jemanden zum
 Admin zu machen:
@@ -128,6 +129,15 @@ direktem Aufruf einer Unterseite einen 404-Fehler zeigen würde.
   offiziell zertifiziertes DATEV-Format (das verlangt eine exakte
   Kopfzeilenstruktur mit Berater-/Mandantennummer) — im Zweifel mit dem
   Steuerberater abstimmen, ob das reicht oder eine Anpassung nötig ist.
+
+## Phase 4 – neu hinzugekommen
+
+- **Datei-Anhänge** über Supabase Storage (Bucket `anhaenge`, privat,
+  Zugriff nur über zeitlich begrenzte signierte URLs) — einbindbar bei
+  **Kunden**, **Rechnungen** und **Lieferscheinen**. Unterstützt beliebige
+  Dateitypen (Fotos, PDFs, Scans), maximal 10 MB pro Datei (schont das
+  1-GB-Speicherkontingent im Supabase-Free-Tier). Löschen ist admin/
+  buchhaltung vorbehalten.
 
 ## Bekannte Grenzen (weiterhin offen)
 
