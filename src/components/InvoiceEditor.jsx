@@ -141,9 +141,17 @@ export default function InvoiceEditor() {
               ...p,
               service_id: serviceId || null,
               bezeichnung: leistung ? leistung.bezeichnung : p.bezeichnung,
-              einheit: leistung ? leistung.einheit : p.einheit,
+              // Einheit nur übernehmen, wenn bei der Leistung fest hinterlegt.
+              // Ist sie bei der Leistung nicht fest, wird sie hier manuell gewählt.
+              einheit: leistung
+                ? leistung.einheit_fix
+                  ? leistung.einheit
+                  : ''
+                : p.einheit,
               einzelpreis: leistung?.standardpreis ?? p.einzelpreis,
-              ust_satz: leistung?.ust_satz ?? p.ust_satz,
+              // USt.-Satz wird ausschließlich in der Rechnung gewählt, nicht
+              // von der Leistung übernommen.
+              ust_satz: p.ust_satz,
             }
           : p
       )
@@ -192,6 +200,17 @@ export default function InvoiceEditor() {
 
     if (!rechnung.customer_id) {
       setFehler('Bitte einen Kunden auswählen.');
+      setSpeichertGerade(false);
+      return;
+    }
+
+    const positionOhneEinheit = positionen.find(
+      (p) => p.bezeichnung.trim() !== '' && !p.einheit
+    );
+    if (positionOhneEinheit) {
+      setFehler(
+        `Bitte bei „${positionOhneEinheit.bezeichnung}" eine Einheit auswählen.`
+      );
       setSpeichertGerade(false);
       return;
     }
@@ -477,10 +496,16 @@ export default function InvoiceEditor() {
                 <td className="py-2 no-print">
                   <select
                     disabled={gesperrt}
-                    value={p.einheit}
+                    required
+                    value={p.einheit || ''}
                     onChange={(e) => positionAendern(idx, 'einheit', e.target.value)}
-                    className="w-full text-xs border-0 bg-transparent py-1"
+                    className={`w-full text-xs border-0 bg-transparent py-1 ${
+                      !p.einheit ? 'text-rost' : ''
+                    }`}
                   >
+                    <option value="" disabled>
+                      — wählen —
+                    </option>
                     {Object.entries(EINHEIT_LABEL).map(([wert, label]) => (
                       <option key={wert} value={wert}>
                         {label || wert}

@@ -78,7 +78,9 @@ export default function TemplatesPage() {
               ...p,
               service_id: serviceId || null,
               bezeichnung: leistung ? leistung.bezeichnung : p.bezeichnung,
-              einheit: leistung ? leistung.einheit : p.einheit,
+              // In Vorlagen gibt es kein manuelles Einheit-Feld; bei Leistungen ohne
+              // feste Einheit bleibt die bisherige Einheit der Position bestehen.
+              einheit: leistung?.einheit_fix ? leistung.einheit : p.einheit,
               einzelpreis: leistung?.standardpreis ?? p.einzelpreis,
             }
           : p

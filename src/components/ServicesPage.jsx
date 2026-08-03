@@ -17,9 +17,9 @@ const LEER_FORMULAR = {
   kategorie: '',
   bezeichnung: '',
   beschreibung: '',
+  einheit_fix: true,
   einheit: 'stunde',
   standardpreis: '',
-  ust_satz: 19,
   aktiv: true,
 };
 
@@ -52,7 +52,14 @@ export default function ServicesPage() {
   }
 
   function bearbeiten(eintrag) {
-    setFormular({ ...eintrag, kategorie: eintrag.kategorie || '' });
+    setFormular({
+      ...eintrag,
+      kategorie: eintrag.kategorie || '',
+      // Ältere Leistungen (vor Einführung des Toggles) haben immer eine
+      // Einheit gesetzt -> als "fest" behandeln.
+      einheit_fix: eintrag.einheit_fix ?? eintrag.einheit != null,
+      einheit: eintrag.einheit || 'stunde',
+    });
     setFormularOffen(true);
     setFehler(null);
   }
@@ -61,13 +68,18 @@ export default function ServicesPage() {
     e.preventDefault();
     setFehler(null);
 
+    if (formular.einheit_fix && !formular.einheit) {
+      setFehler('Bitte eine Einheit auswählen oder den Toggle „Einheit festlegen" ausschalten.');
+      return;
+    }
+
     const daten = {
       kategorie: formular.kategorie || null,
       bezeichnung: formular.bezeichnung,
       beschreibung: formular.beschreibung || null,
-      einheit: formular.einheit,
+      einheit_fix: formular.einheit_fix,
+      einheit: formular.einheit_fix ? formular.einheit : null,
       standardpreis: formular.standardpreis === '' ? null : Number(formular.standardpreis),
-      ust_satz: Number(formular.ust_satz),
       aktiv: formular.aktiv,
     };
 
@@ -149,7 +161,6 @@ export default function ServicesPage() {
                       <th className="text-left px-4 py-2.5 font-medium">Bezeichnung</th>
                       <th className="text-left px-4 py-2.5 font-medium">Einheit</th>
                       <th className="text-left px-4 py-2.5 font-medium">Preis</th>
-                      <th className="text-left px-4 py-2.5 font-medium">USt.</th>
                       <th></th>
                     </tr>
                   </thead>
@@ -163,12 +174,15 @@ export default function ServicesPage() {
                           )}
                         </td>
                         <td className="px-4 py-2.5 text-tanne-900/80">
-                          {EINHEITEN.find((e) => e.value === l.einheit)?.label || l.einheit}
+                          {l.einheit_fix
+                            ? EINHEITEN.find((e) => e.value === l.einheit)?.label || l.einheit
+                            : (
+                              <span className="text-tanne-700/50 italic">manuell in Rechnung</span>
+                            )}
                         </td>
                         <td className="px-4 py-2.5 text-tanne-900/80">
                           {l.standardpreis != null ? `${l.standardpreis.toFixed(2)} €` : '–'}
                         </td>
-                        <td className="px-4 py-2.5 text-tanne-900/80">{l.ust_satz}%</td>
                         <td className="px-4 py-2.5 text-right">
                           <button
                             onClick={() => bearbeiten(l)}
@@ -228,10 +242,23 @@ export default function ServicesPage() {
                   className="w-full rounded-lg border border-tanne-900/15 px-3 py-2 text-sm"
                 />
               </div>
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-xs font-medium text-tanne-900 mb-1">Einheit</label>
+              <div>
+                <div className="flex items-center justify-between mb-1">
+                  <label className="block text-xs font-medium text-tanne-900">Einheit</label>
+                  <label className="flex items-center gap-2 text-xs text-tanne-900/80">
+                    <input
+                      type="checkbox"
+                      checked={formular.einheit_fix}
+                      onChange={(e) =>
+                        setFormular({ ...formular, einheit_fix: e.target.checked })
+                      }
+                    />
+                    Einheit festlegen
+                  </label>
+                </div>
+                {formular.einheit_fix ? (
                   <select
+                    required
                     value={formular.einheit}
                     onChange={(e) => setFormular({ ...formular, einheit: e.target.value })}
                     className="w-full rounded-lg border border-tanne-900/15 px-3 py-2 text-sm bg-white"
@@ -242,7 +269,13 @@ export default function ServicesPage() {
                       </option>
                     ))}
                   </select>
-                </div>
+                ) : (
+                  <p className="text-xs text-tanne-700/60 italic rounded-lg border border-dashed border-tanne-900/15 px-3 py-2">
+                    Wird erst in der Rechnung manuell ausgewählt.
+                  </p>
+                )}
+              </div>
+              <div className="grid grid-cols-2 gap-3 items-end">
                 <div>
                   <label className="block text-xs font-medium text-tanne-900 mb-1">
                     Standardpreis (€)
@@ -255,18 +288,6 @@ export default function ServicesPage() {
                     className="w-full rounded-lg border border-tanne-900/15 px-3 py-2 text-sm"
                   />
                 </div>
-              </div>
-              <div className="grid grid-cols-2 gap-3 items-end">
-                <div>
-                  <label className="block text-xs font-medium text-tanne-900 mb-1">USt.-Satz (%)</label>
-                  <input
-                    type="number"
-                    step="0.01"
-                    value={formular.ust_satz}
-                    onChange={(e) => setFormular({ ...formular, ust_satz: e.target.value })}
-                    className="w-full rounded-lg border border-tanne-900/15 px-3 py-2 text-sm"
-                  />
-                </div>
                 <label className="flex items-center gap-2 text-sm text-tanne-900 pb-2">
                   <input
                     type="checkbox"
@@ -276,6 +297,10 @@ export default function ServicesPage() {
                   Aktiv
                 </label>
               </div>
+              <p className="text-[11px] text-tanne-700/50 -mt-1">
+                Der Preis wird immer individuell in der Rechnung festgelegt. Der USt.-Satz wird
+                ebenfalls erst in der Rechnung ausgewählt.
+              </p>
 
               {fehler && <p className="text-sm text-rost">{fehler}</p>}
 
