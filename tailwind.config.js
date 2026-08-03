@@ -3,6 +3,9 @@ export default {
   content: ['./index.html', './src/**/*.{js,jsx}'],
   theme: {
     extend: {
+      screens: {
+        xs: '400px',
+      },
       colors: {
         // Farbschema "Marineblau & Smaragd".
         // Die ursprünglichen Namen (tanne/rinde/moos/papier/rost) bleiben
