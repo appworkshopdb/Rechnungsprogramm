@@ -76,7 +76,7 @@ export default function RemindersPage() {
 
   if (druckAnsicht) {
     return (
-      <div className="p-8 max-w-3xl">
+      <div className="p-4 sm:p-8 max-w-3xl">
         <div className="no-print mb-4 flex gap-2">
           <button
             onClick={() => setDruckAnsicht(null)}
@@ -120,7 +120,7 @@ export default function RemindersPage() {
   }
 
   return (
-    <div className="p-8 max-w-4xl">
+    <div className="p-4 sm:p-8 max-w-4xl">
       <div className="mb-6">
         <h1 className="font-display text-2xl font-semibold text-tanne-900">Mahnungen</h1>
         <p className="text-sm text-tanne-700/70">
@@ -137,7 +137,7 @@ export default function RemindersPage() {
           Keine offenen Rechnungen — entweder alles bezahlt oder noch nichts freigegeben.
         </div>
       ) : (
-        <div className="rounded-xl border border-tanne-900/10 bg-white/60 overflow-hidden">
+        <div className="rounded-xl border border-tanne-900/10 bg-white/60 overflow-x-auto">
           <table className="w-full text-sm">
             <thead className="bg-tanne-900/5 text-tanne-900/70 text-xs uppercase tracking-wide">
               <tr>

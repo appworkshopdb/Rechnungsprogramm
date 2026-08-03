@@ -295,11 +295,11 @@ export default function InvoiceEditor() {
   }
 
   if (ladeVorgang) {
-    return <div className="p-8 text-sm text-tanne-700/60">Lade…</div>;
+    return <div className="p-4 sm:p-8 text-sm text-tanne-700/60">Lade…</div>;
   }
 
   return (
-    <div className="p-8 max-w-4xl">
+    <div className="p-4 sm:p-8 max-w-4xl">
       <div className="no-print flex items-center justify-between mb-6">
         <div>
           <h1 className="font-display text-2xl font-semibold text-tanne-900">
@@ -375,7 +375,7 @@ export default function InvoiceEditor() {
           </div>
         </div>
 
-        <div className="grid grid-cols-2 gap-6 mb-8 no-print">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 mb-8 no-print">
           <div>
             <label className="block text-xs font-medium text-tanne-900 mb-1">Kunde *</label>
             <select
@@ -392,7 +392,7 @@ export default function InvoiceEditor() {
               ))}
             </select>
           </div>
-          <div className="grid grid-cols-3 gap-2">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
             <div>
               <label className="block text-xs font-medium text-tanne-900 mb-1">
                 Datum (optional)

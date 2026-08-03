@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { NavLink, Outlet, useNavigate } from 'react-router-dom';
+import { NavLink, Outlet, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../lib/AuthContext';
 import logoUrl from '../assets/logo.svg';
 
@@ -9,10 +9,24 @@ const ROLLEN_LABEL = {
   mitarbeiter: 'Mitarbeiter',
 };
 
-function NavItem({ to, children }) {
+const MENUE = [
+  { to: '/rechnungen', label: 'Rechnungen' },
+  { to: '/lieferscheine', label: 'Lieferscheine' },
+  { to: '/gutschriften', label: 'Gutschriften' },
+  { to: '/mahnungen', label: 'Mahnungen' },
+  { to: '/zeiterfassung', label: 'Zeiterfassung' },
+  { to: '/vorlagen', label: 'Vorlagen' },
+  { to: '/kunden', label: 'Kunden' },
+  { to: '/leistungen', label: 'Leistungen' },
+  { to: '/ausgaben', label: 'Ausgaben' },
+  { to: '/uebersicht', label: 'Übersicht' },
+];
+
+function NavItem({ to, children, onClick }) {
   return (
     <NavLink
       to={to}
+      onClick={onClick}
       className={({ isActive }) =>
         `rounded-md px-3 py-1.5 text-sm font-medium transition-colors whitespace-nowrap ${
           isActive
@@ -29,10 +43,12 @@ function NavItem({ to, children }) {
 export default function Layout() {
   const { profile, rolle, abmelden } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
   const [menuOffen, setMenuOffen] = useState(false);
+  const [mobileNavOffen, setMobileNavOffen] = useState(false);
   const menuRef = useRef(null);
 
-  // Dropdown schließen, wenn außerhalb geklickt wird
+  // Zahnrad-Dropdown schließen, wenn außerhalb geklickt wird
   useEffect(() => {
     function handleClick(e) {
       if (menuRef.current && !menuRef.current.contains(e.target)) {
@@ -43,21 +59,29 @@ export default function Layout() {
     return () => document.removeEventListener('mousedown', handleClick);
   }, []);
 
+  // Mobiles Menü schließen, sobald die Seite gewechselt wird
+  useEffect(() => {
+    setMobileNavOffen(false);
+  }, [location.pathname]);
+
   return (
     <div className="min-h-screen flex flex-col">
       {/* Obere helle Leiste: Logo + Firmenname links, Angemeldet-Info + Zahnrad rechts */}
       <header className="no-print bg-white border-b border-tanne-900/10">
-        <div className="px-5 py-2.5 flex items-center justify-between">
-          <div className="flex items-center gap-2.5">
-            <img src={logoUrl} alt="Forstservice Elsasser Logo" className="h-9 w-auto shrink-0" />
-            <span className="font-semibold text-tanne-900 text-lg leading-tight tracking-tight">
+        <div className="px-3 sm:px-5 py-2.5 flex items-center justify-between gap-2">
+          <div className="flex items-center gap-2 min-w-0">
+            <img src={logoUrl} alt="Forstservice Elsasser Logo" className="h-8 sm:h-9 w-auto shrink-0" />
+            <span className="font-semibold text-tanne-900 text-base sm:text-lg leading-tight tracking-tight truncate">
               Forstservice
             </span>
           </div>
 
-          <div className="flex items-center gap-3">
-            <div className="text-right leading-tight">
-              <p className="text-sm font-medium text-tanne-900">{profile?.full_name || 'Angemeldet'}</p>
+          <div className="flex items-center gap-2 sm:gap-3 shrink-0">
+            {/* Angemeldet-Info — auf sehr kleinen Handys ausgeblendet, um Platz zu sparen */}
+            <div className="text-right leading-tight hidden xs:block">
+              <p className="text-sm font-medium text-tanne-900 truncate max-w-[120px]">
+                {profile?.full_name || 'Angemeldet'}
+              </p>
               <p className="text-[11px] text-tanne-700/60">{ROLLEN_LABEL[rolle] || rolle}</p>
             </div>
 
@@ -77,6 +101,10 @@ export default function Layout() {
 
               {menuOffen && (
                 <div className="absolute right-0 mt-2 w-52 bg-white rounded-lg shadow-lg border border-tanne-900/10 py-1 z-30">
+                  <div className="px-4 py-2 border-b border-tanne-900/10 xs:hidden">
+                    <p className="text-sm font-medium text-tanne-900">{profile?.full_name || 'Angemeldet'}</p>
+                    <p className="text-[11px] text-tanne-700/60">{ROLLEN_LABEL[rolle] || rolle}</p>
+                  </div>
                   {rolle === 'admin' && (
                     <button
                       onClick={() => {
@@ -100,25 +128,55 @@ export default function Layout() {
                 </div>
               )}
             </div>
+
+            {/* Hamburger-Button — nur auf dem Handy sichtbar */}
+            <button
+              onClick={() => setMobileNavOffen((o) => !o)}
+              className="lg:hidden flex items-center justify-center h-9 w-9 rounded-lg text-tanne-700 hover:bg-tanne-900/5 transition-colors"
+              aria-label="Menü"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                {mobileNavOffen ? (
+                  <>
+                    <line x1="18" y1="6" x2="6" y2="18" />
+                    <line x1="6" y1="6" x2="18" y2="18" />
+                  </>
+                ) : (
+                  <>
+                    <line x1="3" y1="12" x2="21" y2="12" />
+                    <line x1="3" y1="6" x2="21" y2="6" />
+                    <line x1="3" y1="18" x2="21" y2="18" />
+                  </>
+                )}
+              </svg>
+            </button>
           </div>
         </div>
       </header>
 
-      {/* Untere dunkle Menüleiste mit allen Menüpunkten */}
-      <nav className="no-print bg-tanne-800 border-b border-tanne-950/30">
+      {/* Desktop-Menüleiste: horizontal, ab lg sichtbar */}
+      <nav className="no-print bg-tanne-800 border-b border-tanne-950/30 hidden lg:block">
         <div className="px-5 py-2 flex items-center gap-1 flex-wrap">
-          <NavItem to="/rechnungen">Rechnungen</NavItem>
-          <NavItem to="/lieferscheine">Lieferscheine</NavItem>
-          <NavItem to="/gutschriften">Gutschriften</NavItem>
-          <NavItem to="/mahnungen">Mahnungen</NavItem>
-          <NavItem to="/zeiterfassung">Zeiterfassung</NavItem>
-          <NavItem to="/vorlagen">Vorlagen</NavItem>
-          <NavItem to="/kunden">Kunden</NavItem>
-          <NavItem to="/leistungen">Leistungen</NavItem>
-          <NavItem to="/ausgaben">Ausgaben</NavItem>
-          <NavItem to="/uebersicht">Übersicht</NavItem>
+          {MENUE.map((m) => (
+            <NavItem key={m.to} to={m.to}>
+              {m.label}
+            </NavItem>
+          ))}
         </div>
       </nav>
+
+      {/* Mobiles Menü: einklappbar, nur unter lg und wenn geöffnet */}
+      {mobileNavOffen && (
+        <nav className="no-print bg-tanne-800 border-b border-tanne-950/30 lg:hidden">
+          <div className="px-3 py-2 flex flex-col gap-1">
+            {MENUE.map((m) => (
+              <NavItem key={m.to} to={m.to} onClick={() => setMobileNavOffen(false)}>
+                {m.label}
+              </NavItem>
+            ))}
+          </div>
+        </nav>
+      )}
 
       <main className="flex-1 min-w-0">
         <Outlet />

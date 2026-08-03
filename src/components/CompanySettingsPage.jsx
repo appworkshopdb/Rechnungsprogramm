@@ -73,11 +73,11 @@ export default function CompanySettingsPage() {
     setHinweis('Gespeichert.');
   }
 
-  if (ladeVorgang) return <div className="p-8 text-sm text-tanne-700/60">Lade…</div>;
+  if (ladeVorgang) return <div className="p-4 sm:p-8 text-sm text-tanne-700/60">Lade…</div>;
 
   if (rolle !== 'admin') {
     return (
-      <div className="p-8 max-w-2xl">
+      <div className="p-4 sm:p-8 max-w-2xl">
         <h1 className="font-display text-2xl font-semibold text-tanne-900 mb-2">Firmeneinstellungen</h1>
         {fehler && <p className="text-sm text-rost mb-3">{fehler}</p>}
         <p className="text-sm text-tanne-700/70">
@@ -93,7 +93,7 @@ export default function CompanySettingsPage() {
   }
 
   return (
-    <div className="p-8 max-w-2xl">
+    <div className="p-4 sm:p-8 max-w-2xl">
       <h1 className="font-display text-2xl font-semibold text-tanne-900 mb-1">Firmeneinstellungen</h1>
       <p className="text-sm text-tanne-700/70 mb-6">
         Erscheint auf Rechnungen, Lieferscheinen und im XRechnung-Export
@@ -110,7 +110,7 @@ export default function CompanySettingsPage() {
           />
         </div>
 
-        <div className="grid grid-cols-3 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
           <div className="col-span-2">
             <label className="block text-xs font-medium text-tanne-900 mb-1">Straße</label>
             <input
@@ -129,7 +129,7 @@ export default function CompanySettingsPage() {
           </div>
         </div>
 
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <div>
             <label className="block text-xs font-medium text-tanne-900 mb-1">Ort</label>
             <input
@@ -148,7 +148,7 @@ export default function CompanySettingsPage() {
           </div>
         </div>
 
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <div>
             <label className="block text-xs font-medium text-tanne-900 mb-1">Telefon</label>
             <input
@@ -172,7 +172,7 @@ export default function CompanySettingsPage() {
           <p className="text-xs font-medium text-tanne-900/60 uppercase tracking-wide mb-3">
             Für Rechnungen &amp; XRechnung
           </p>
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
               <label className="block text-xs font-medium text-tanne-900 mb-1">USt-IdNr.</label>
               <input
@@ -191,7 +191,7 @@ export default function CompanySettingsPage() {
               />
             </div>
           </div>
-          <div className="grid grid-cols-2 gap-3 mt-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-3">
             <div>
               <label className="block text-xs font-medium text-tanne-900 mb-1">IBAN</label>
               <input

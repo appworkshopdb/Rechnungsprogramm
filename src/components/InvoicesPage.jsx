@@ -84,8 +84,8 @@ export default function InvoicesPage() {
   }
 
   return (
-    <div className="p-8 max-w-5xl">
-      <div className="flex items-center justify-between mb-6">
+    <div className="p-4 sm:p-8 max-w-5xl">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-6">
         <div>
           <h1 className="font-display text-2xl font-semibold text-tanne-900">Rechnungen</h1>
           <p className="text-sm text-tanne-700/70">Entwürfe, freigegebene und bezahlte Rechnungen</p>
@@ -121,7 +121,7 @@ export default function InvoicesPage() {
           Noch keine Rechnungen vorhanden. Leg mit „+ Neue Rechnung" die erste an.
         </div>
       ) : (
-        <div className="rounded-xl border border-tanne-900/10 bg-white/60 overflow-hidden">
+        <div className="rounded-xl border border-tanne-900/10 bg-white/60 overflow-x-auto">
           <table className="w-full text-sm">
             <thead className="bg-tanne-900/5 text-tanne-900/70 text-xs uppercase tracking-wide">
               <tr>

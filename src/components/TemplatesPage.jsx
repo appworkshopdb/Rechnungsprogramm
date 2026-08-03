@@ -141,8 +141,8 @@ export default function TemplatesPage() {
   }
 
   return (
-    <div className="p-8 max-w-4xl">
-      <div className="flex items-center justify-between mb-6">
+    <div className="p-4 sm:p-8 max-w-4xl">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-6">
         <div>
           <h1 className="font-display text-2xl font-semibold text-tanne-900">Rechnungsvorlagen</h1>
           <p className="text-sm text-tanne-700/70">
@@ -203,7 +203,7 @@ export default function TemplatesPage() {
               {formular.id ? 'Vorlage bearbeiten' : 'Neue Vorlage'}
             </h2>
             <form onSubmit={speichern} className="space-y-4">
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                   <label className="block text-xs font-medium text-tanne-900 mb-1">Name *</label>
                   <input

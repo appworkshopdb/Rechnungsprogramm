@@ -211,14 +211,14 @@ export default function CreditNoteEditor() {
     navigate(`/gutschriften/${gutschriftId}`, { replace: true });
   }
 
-  if (ladeVorgang) return <div className="p-8 text-sm text-tanne-700/60">Lade…</div>;
+  if (ladeVorgang) return <div className="p-4 sm:p-8 text-sm text-tanne-700/60">Lade…</div>;
 
   const passendeRechnungen = rechnungenListe.filter(
     (r) => !gutschrift.customer_id || r.customer_id === gutschrift.customer_id
   );
 
   return (
-    <div className="p-8 max-w-4xl">
+    <div className="p-4 sm:p-8 max-w-4xl">
       <div className="no-print flex items-center justify-between mb-6">
         <div>
           <h1 className="font-display text-2xl font-semibold text-tanne-900">
@@ -277,7 +277,7 @@ export default function CreditNoteEditor() {
           </div>
         </div>
 
-        <div className="grid grid-cols-2 gap-6 mb-4 no-print">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 mb-4 no-print">
           <div>
             <label className="block text-xs font-medium text-tanne-900 mb-1">Kunde *</label>
             <select
@@ -314,7 +314,7 @@ export default function CreditNoteEditor() {
           </div>
         </div>
 
-        <div className="grid grid-cols-2 gap-6 mb-8 no-print">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 mb-8 no-print">
           <div>
             <label className="block text-xs font-medium text-tanne-900 mb-1">Grund</label>
             <input

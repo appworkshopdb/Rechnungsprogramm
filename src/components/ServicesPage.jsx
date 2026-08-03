@@ -115,8 +115,8 @@ export default function ServicesPage() {
   }, [leistungen, suche]);
 
   return (
-    <div className="p-8 max-w-4xl">
-      <div className="flex items-center justify-between mb-6">
+    <div className="p-4 sm:p-8 max-w-4xl">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-6">
         <div>
           <h1 className="font-display text-2xl font-semibold text-tanne-900">Leistungen</h1>
           <p className="text-sm text-tanne-700/70">
@@ -154,7 +154,7 @@ export default function ServicesPage() {
               <h2 className="text-xs font-semibold text-tanne-700 uppercase tracking-wide mb-2">
                 {gruppe.kategorie}
               </h2>
-              <div className="rounded-xl border border-tanne-900/10 bg-white/60 overflow-hidden">
+              <div className="rounded-xl border border-tanne-900/10 bg-white/60 overflow-x-auto">
                 <table className="w-full text-sm">
                   <thead className="bg-tanne-900/5 text-tanne-900/70 text-xs uppercase tracking-wide">
                     <tr>
@@ -275,7 +275,7 @@ export default function ServicesPage() {
                   </p>
                 )}
               </div>
-              <div className="grid grid-cols-2 gap-3 items-end">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 items-end">
                 <div>
                   <label className="block text-xs font-medium text-tanne-900 mb-1">
                     Standardpreis (€)
