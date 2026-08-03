@@ -54,6 +54,7 @@ export default function InvoiceEditor() {
     rechnungsdatum: '',
     leistungszeitraum_von: '',
     leistungszeitraum_bis: '',
+    preis_modus: 'netto',
     zahlungsziel_tage: '',
     skonto_tage: '',
     skonto_prozent: '',
@@ -191,19 +192,27 @@ export default function InvoiceEditor() {
   }, [leistungen]);
 
   const summen = useMemo(() => {
-    const netto = positionen.reduce(
-      (sum, p) => sum + Number(p.menge || 0) * Number(p.einzelpreis || 0),
-      0
-    );
+    const bruttoModus = rechnung.preis_modus === 'brutto';
+    let netto = 0;
     const ustGruppen = {};
     positionen.forEach((p) => {
       const satz = Number(p.ust_satz || 0);
-      const zeilenNetto = Number(p.menge || 0) * Number(p.einzelpreis || 0);
+      const zeilenSumme = Number(p.menge || 0) * Number(p.einzelpreis || 0);
+      let zeilenNetto;
+      if (bruttoModus) {
+        // Eingegebener Preis ist Brutto -> Netto herausrechnen:
+        // Netto = Brutto / (1 + Satz/100)
+        zeilenNetto = zeilenSumme / (1 + satz / 100);
+      } else {
+        // Eingegebener Preis ist Netto -> Steuer kommt oben drauf
+        zeilenNetto = zeilenSumme;
+      }
+      netto += zeilenNetto;
       ustGruppen[satz] = (ustGruppen[satz] || 0) + zeilenNetto * (satz / 100);
     });
     const ustGesamt = Object.values(ustGruppen).reduce((a, b) => a + b, 0);
-    return { netto, ustGruppen, ustGesamt, brutto: netto + ustGesamt };
-  }, [positionen]);
+    return { netto, ustGruppen, ustGesamt, brutto: netto + ustGesamt, bruttoModus };
+  }, [positionen, rechnung.preis_modus]);
 
   async function speichern({ alsFreigabe = false } = {}) {
     setFehler(null);
@@ -231,6 +240,7 @@ export default function InvoiceEditor() {
       rechnungsdatum: rechnung.rechnungsdatum || null,
       leistungszeitraum_von: rechnung.leistungszeitraum_von || null,
       leistungszeitraum_bis: rechnung.leistungszeitraum_bis || null,
+      preis_modus: rechnung.preis_modus || 'netto',
       zahlungsziel_tage: rechnung.zahlungsziel_tage === '' ? null : Number(rechnung.zahlungsziel_tage),
       skonto_tage: rechnung.skonto_tage === '' ? null : Number(rechnung.skonto_tage),
       skonto_prozent: rechnung.skonto_prozent === '' ? null : Number(rechnung.skonto_prozent),
@@ -304,7 +314,16 @@ export default function InvoiceEditor() {
   function xrechnungHerunterladen() {
     const kunde = kunden.find((k) => k.id === rechnung.customer_id);
     if (!kunde || !firma) return;
-    const xml = xrechnungXmlErzeugen(rechnung, positionen, kunde, firma);
+    // Die XRechnung verlangt IMMER Netto-Einzelpreise. Im Brutto-Modus
+    // rechnen wir die eingegebenen Brutto-Preise pro Position auf Netto zurück.
+    const positionenNetto =
+      rechnung.preis_modus === 'brutto'
+        ? positionen.map((p) => ({
+            ...p,
+            einzelpreis: Number(p.einzelpreis || 0) / (1 + Number(p.ust_satz || 0) / 100),
+          }))
+        : positionen;
+    const xml = xrechnungXmlErzeugen(rechnung, positionenNetto, kunde, firma);
     xmlHerunterladen(`${rechnung.nummer || 'rechnung'}.xml`, xml);
   }
 
@@ -453,13 +472,50 @@ export default function InvoiceEditor() {
           </p>
         </div>
 
+        <div className="no-print mb-4 flex items-center gap-3 bg-tanne-900/[0.03] rounded-lg px-4 py-2.5">
+          <span className="text-xs font-medium text-tanne-900">Preiseingabe:</span>
+          <div className="inline-flex rounded-lg border border-tanne-900/15 overflow-hidden">
+            <button
+              type="button"
+              disabled={gesperrt}
+              onClick={() => setRechnung({ ...rechnung, preis_modus: 'netto' })}
+              className={`px-3 py-1 text-xs font-medium transition-colors ${
+                rechnung.preis_modus !== 'brutto'
+                  ? 'bg-tanne-800 text-papier'
+                  : 'bg-white text-tanne-900/70 hover:bg-tanne-900/5'
+              } disabled:opacity-60`}
+            >
+              Netto
+            </button>
+            <button
+              type="button"
+              disabled={gesperrt}
+              onClick={() => setRechnung({ ...rechnung, preis_modus: 'brutto' })}
+              className={`px-3 py-1 text-xs font-medium transition-colors ${
+                rechnung.preis_modus === 'brutto'
+                  ? 'bg-tanne-800 text-papier'
+                  : 'bg-white text-tanne-900/70 hover:bg-tanne-900/5'
+              } disabled:opacity-60`}
+            >
+              Brutto
+            </button>
+          </div>
+          <span className="text-[11px] text-tanne-700/60">
+            {rechnung.preis_modus === 'brutto'
+              ? 'Eingegebene Preise sind inkl. USt. — Steuer wird herausgerechnet.'
+              : 'Eingegebene Preise sind netto — Steuer wird aufgeschlagen.'}
+          </span>
+        </div>
+
         <table className="w-full text-sm mb-4">
           <thead>
             <tr className="border-b border-tanne-900/15 text-xs uppercase tracking-wide text-tanne-900/60">
               <th className="text-left py-2">Bezeichnung</th>
               <th className="text-right py-2 w-20">Menge</th>
               <th className="text-left py-2 w-20 no-print">Einheit</th>
-              <th className="text-right py-2 w-24">Einzelpr.</th>
+              <th className="text-right py-2 w-24">
+                Einzelpr.{summen.bruttoModus ? ' (brutto)' : ''}
+              </th>
               <th className="text-right py-2 w-16 no-print">USt.</th>
               <th className="text-right py-2 w-24">Summe</th>
               <th className="w-8 no-print"></th>
@@ -592,7 +648,9 @@ export default function InvoiceEditor() {
             </div>
             {Object.entries(summen.ustGruppen).map(([satz, betrag]) => (
               <div key={satz} className="flex justify-between text-tanne-900/70">
-                <span>zzgl. {satz}% USt.</span>
+                <span>
+                  {summen.bruttoModus ? 'inkl.' : 'zzgl.'} {satz}% USt.
+                </span>
                 <span>{betrag.toFixed(2)} €</span>
               </div>
             ))}
