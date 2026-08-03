@@ -5,15 +5,23 @@ import { useAuth } from '../lib/AuthContext';
 import { xrechnungXmlErzeugen, xmlHerunterladen } from '../lib/xrechnung';
 import AttachmentsPanel from './AttachmentsPanel';
 import { KATEGORIEN, OHNE_KATEGORIE } from '../lib/kategorien';
+import { EINHEITEN, UST_SAETZE } from '../lib/einheiten';
 import logoUrl from '../assets/logo.svg';
 
-const EINHEIT_LABEL = {
+// Kurzlabel je Einheit für die kompakte Anzeige in der Positionszeile.
+// Fällt auf das Value zurück, falls kein Kürzel definiert ist.
+const EINHEIT_KURZ = {
   stunde: 'Std.',
   tag: 'Tag(e)',
-  festmeter: 'Fm',
-  pauschale: 'Pausch.',
+  festmeter: 'fm',
+  raummeter: 'rm',
+  kubikmeter: 'm³',
+  hektar: 'ha',
+  kilogramm: 'kg',
+  tonne: 't',
   km: 'km',
   stueck: 'Stk.',
+  pauschale: 'Pausch.',
   frei: '',
 };
 
@@ -46,6 +54,9 @@ export default function InvoiceEditor() {
     rechnungsdatum: '',
     leistungszeitraum_von: '',
     leistungszeitraum_bis: '',
+    zahlungsziel_tage: '',
+    skonto_tage: '',
+    skonto_prozent: '',
     notiz: '',
     nummer: null,
     created_by: null,
@@ -220,6 +231,9 @@ export default function InvoiceEditor() {
       rechnungsdatum: rechnung.rechnungsdatum || null,
       leistungszeitraum_von: rechnung.leistungszeitraum_von || null,
       leistungszeitraum_bis: rechnung.leistungszeitraum_bis || null,
+      zahlungsziel_tage: rechnung.zahlungsziel_tage === '' ? null : Number(rechnung.zahlungsziel_tage),
+      skonto_tage: rechnung.skonto_tage === '' ? null : Number(rechnung.skonto_tage),
+      skonto_prozent: rechnung.skonto_prozent === '' ? null : Number(rechnung.skonto_prozent),
       notiz: rechnung.notiz || null,
     };
 
@@ -490,7 +504,7 @@ export default function InvoiceEditor() {
                     className="w-16 text-right border-0 bg-transparent px-0 py-1 text-sm disabled:opacity-90"
                   />
                   <span className="text-xs text-tanne-700/50 print:inline hidden ml-1">
-                    {EINHEIT_LABEL[p.einheit]}
+                    {EINHEIT_KURZ[p.einheit] || p.einheit}
                   </span>
                 </td>
                 <td className="py-2 no-print">
@@ -506,9 +520,9 @@ export default function InvoiceEditor() {
                     <option value="" disabled>
                       — wählen —
                     </option>
-                    {Object.entries(EINHEIT_LABEL).map(([wert, label]) => (
-                      <option key={wert} value={wert}>
-                        {label || wert}
+                    {EINHEITEN.map((e) => (
+                      <option key={e.value} value={e.value}>
+                        {e.label}
                       </option>
                     ))}
                   </select>
@@ -529,10 +543,18 @@ export default function InvoiceEditor() {
                     disabled={gesperrt}
                     type="number"
                     step="0.01"
+                    list="ust-saetze"
                     value={p.ust_satz}
                     onChange={(e) => positionAendern(idx, 'ust_satz', e.target.value)}
                     className="w-14 text-right border-0 bg-transparent px-0 py-1 text-sm disabled:opacity-90"
                   />
+                  <datalist id="ust-saetze">
+                    {UST_SAETZE.map((s) => (
+                      <option key={s.value} value={s.value}>
+                        {s.label}
+                      </option>
+                    ))}
+                  </datalist>
                 </td>
                 <td className="py-2 text-right font-medium text-tanne-900">
                   {(Number(p.menge || 0) * Number(p.einzelpreis || 0)).toFixed(2)} €
@@ -582,6 +604,48 @@ export default function InvoiceEditor() {
         </div>
 
         <div className="mt-8 no-print">
+          <label className="block text-xs font-medium text-tanne-900 mb-2">
+            Zahlungsziel &amp; Skonto (optional, erscheint in der E-Rechnung)
+          </label>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <div>
+              <label className="block text-[11px] text-tanne-700/70 mb-1">Zahlungsziel (Tage)</label>
+              <input
+                disabled={gesperrt}
+                type="number"
+                value={rechnung.zahlungsziel_tage || ''}
+                onChange={(e) => setRechnung({ ...rechnung, zahlungsziel_tage: e.target.value })}
+                placeholder="z.B. 30"
+                className="w-full rounded-lg border border-tanne-900/15 px-3 py-2 text-sm disabled:opacity-60"
+              />
+            </div>
+            <div>
+              <label className="block text-[11px] text-tanne-700/70 mb-1">Skonto-Frist (Tage)</label>
+              <input
+                disabled={gesperrt}
+                type="number"
+                value={rechnung.skonto_tage || ''}
+                onChange={(e) => setRechnung({ ...rechnung, skonto_tage: e.target.value })}
+                placeholder="z.B. 14"
+                className="w-full rounded-lg border border-tanne-900/15 px-3 py-2 text-sm disabled:opacity-60"
+              />
+            </div>
+            <div>
+              <label className="block text-[11px] text-tanne-700/70 mb-1">Skonto (%)</label>
+              <input
+                disabled={gesperrt}
+                type="number"
+                step="0.01"
+                value={rechnung.skonto_prozent || ''}
+                onChange={(e) => setRechnung({ ...rechnung, skonto_prozent: e.target.value })}
+                placeholder="z.B. 2.00"
+                className="w-full rounded-lg border border-tanne-900/15 px-3 py-2 text-sm disabled:opacity-60"
+              />
+            </div>
+          </div>
+        </div>
+
+        <div className="mt-6 no-print">
           <label className="block text-xs font-medium text-tanne-900 mb-1">
             Notiz (nur intern sichtbar)
           </label>

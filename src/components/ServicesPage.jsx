@@ -1,16 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { supabase } from '../lib/supabaseClient';
 import { KATEGORIEN, OHNE_KATEGORIE } from '../lib/kategorien';
-
-const EINHEITEN = [
-  { value: 'stunde', label: 'Stunde' },
-  { value: 'tag', label: 'Tag' },
-  { value: 'festmeter', label: 'Festmeter' },
-  { value: 'pauschale', label: 'Pauschale' },
-  { value: 'km', label: 'Kilometer' },
-  { value: 'stueck', label: 'Stück' },
-  { value: 'frei', label: 'Frei (individuell)' },
-];
+import { EINHEITEN, einheitLabel } from '../lib/einheiten';
 
 const LEER_FORMULAR = {
   id: null,
