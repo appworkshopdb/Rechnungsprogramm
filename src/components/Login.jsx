@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { supabase } from '../lib/supabaseClient';
+import logoUrl from '../assets/logo.svg';
 
 export default function Login() {
   const [email, setEmail] = useState('');
@@ -20,9 +21,7 @@ export default function Login() {
     <div className="min-h-screen flex items-center justify-center px-4">
       <div className="w-full max-w-sm">
         <div className="mb-8 text-center">
-          <div className="inline-flex h-12 w-12 items-center justify-center rounded-full bg-tanne-800 text-papier text-xl font-display mb-3">
-            F
-          </div>
+          <img src={logoUrl} alt="Forstservice Elsasser Logo" className="h-16 w-auto mx-auto mb-4" />
           <h1 className="font-display text-2xl font-semibold text-tanne-900">
             Forstservice
           </h1>
