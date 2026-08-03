@@ -62,17 +62,33 @@ function steuerKategorie(satz) {
   return { code: 'S', hinweis: '' };
 }
 
+// Rundet auf 2 Nachkommastellen (kaufmännisch). Zentral, damit die
+// Beträge im XML exakt zur Summenberechnung passen (sonst BR-CO-10-Fehler:
+// Summe der Zeilen ≠ Gesamtsumme wegen Rundungsdifferenzen).
+function runde(betrag) {
+  return Math.round((Number(betrag) + Number.EPSILON) * 100) / 100;
+}
+
 function summenBerechnen(items) {
-  const netto = items.reduce((s, p) => s + Number(p.menge) * Number(p.einzelpreis), 0);
+  // WICHTIG: Jeder Zeilen-Nettobetrag wird EINZELN gerundet — genau so,
+  // wie er auch im XML (LineExtensionAmount) ausgegeben wird. Die
+  // Gesamtsummen entstehen dann aus diesen gerundeten Werten, damit
+  // "Summe der Zeilen" und "Gesamtnetto" centgenau übereinstimmen.
+  let netto = 0;
   const ustGruppen = {};
+  const nettoProSatz = {};
   items.forEach((p) => {
     const satz = Number(p.ust_satz);
-    const zeilenNetto = Number(p.menge) * Number(p.einzelpreis);
-    if (!ustGruppen[satz]) ustGruppen[satz] = 0;
-    ustGruppen[satz] += zeilenNetto * (satz / 100);
+    const zeilenNetto = runde(Number(p.menge) * Number(p.einzelpreis));
+    netto = runde(netto + zeilenNetto);
+    nettoProSatz[satz] = runde((nettoProSatz[satz] || 0) + zeilenNetto);
   });
-  const ustGesamt = Object.values(ustGruppen).reduce((a, b) => a + b, 0);
-  return { netto, ustGruppen, ustGesamt, brutto: netto + ustGesamt };
+  // USt je Satz aus dem gerundeten Netto-Betrag dieses Satzes berechnen
+  Object.entries(nettoProSatz).forEach(([satz, nettoSatz]) => {
+    ustGruppen[satz] = runde(nettoSatz * (Number(satz) / 100));
+  });
+  const ustGesamt = runde(Object.values(ustGruppen).reduce((a, b) => a + b, 0));
+  return { netto, ustGruppen, nettoProSatz, ustGesamt, brutto: runde(netto + ustGesamt) };
 }
 
 /**
@@ -105,9 +121,9 @@ export function xrechnungXmlErzeugen(invoice, items, customer, company, optionen
   const taxSubtotals = Object.entries(summen.ustGruppen)
     .map(([satz, betrag]) => {
       const kat = steuerKategorie(satz);
-      const zeilenNettoFuerSatz = items
-        .filter((p) => Number(p.ust_satz) === Number(satz))
-        .reduce((s, p) => s + Number(p.menge) * Number(p.einzelpreis), 0);
+      // Gerundetes Netto dieses Satzes aus der zentralen Summenberechnung —
+      // exakt konsistent zu den Zeilenbeträgen (sonst BR-CO-10 / BR-CO-14).
+      const zeilenNettoFuerSatz = summen.nettoProSatz[satz] || 0;
       const hinweisZeile = kat.hinweis
         ? `\n        <cbc:TaxExemptionReason>${escapeXml(kat.hinweis)}</cbc:TaxExemptionReason>`
         : '';
@@ -126,7 +142,7 @@ export function xrechnungXmlErzeugen(invoice, items, customer, company, optionen
 
   const invoiceLines = items
     .map((p, idx) => {
-      const zeilenNetto = Number(p.menge) * Number(p.einzelpreis);
+      const zeilenNetto = runde(Number(p.menge) * Number(p.einzelpreis));
       const code = EINHEIT_CODE[p.einheit] || 'C62';
       const kat = steuerKategorie(p.ust_satz);
       return `
