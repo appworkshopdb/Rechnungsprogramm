@@ -4,6 +4,7 @@ import { supabase } from '../lib/supabaseClient';
 import { useAuth } from '../lib/AuthContext';
 import { xrechnungXmlErzeugen, xmlHerunterladen } from '../lib/xrechnung';
 import AttachmentsPanel from './AttachmentsPanel';
+import { KATEGORIEN, OHNE_KATEGORIE } from '../lib/kategorien';
 import logoUrl from '../assets/logo.svg';
 
 const EINHEIT_LABEL = {
@@ -156,6 +157,19 @@ export default function InvoiceEditor() {
   function positionHinzufuegen() {
     setPositionen((liste) => [...liste, neueLeerePosition()]);
   }
+
+  const leistungenNachKategorie = useMemo(() => {
+    const gruppen = {};
+    leistungen.forEach((l) => {
+      const kat = l.kategorie || OHNE_KATEGORIE;
+      if (!gruppen[kat]) gruppen[kat] = [];
+      gruppen[kat].push(l);
+    });
+    const reihenfolge = [...KATEGORIEN, OHNE_KATEGORIE];
+    return reihenfolge
+      .filter((kat) => gruppen[kat] && gruppen[kat].length > 0)
+      .map((kat) => ({ kategorie: kat, eintraege: gruppen[kat] }));
+  }, [leistungen]);
 
   const summen = useMemo(() => {
     const netto = positionen.reduce(
@@ -429,10 +443,14 @@ export default function InvoiceEditor() {
                     className="no-print w-full text-xs text-tanne-700/50 mb-1 border-0 bg-transparent"
                   >
                     <option value="">— Leistung aus Katalog übernehmen —</option>
-                    {leistungen.map((l) => (
-                      <option key={l.id} value={l.id}>
-                        {l.bezeichnung}
-                      </option>
+                    {leistungenNachKategorie.map((gruppe) => (
+                      <optgroup key={gruppe.kategorie} label={gruppe.kategorie}>
+                        {gruppe.eintraege.map((l) => (
+                          <option key={l.id} value={l.id}>
+                            {l.bezeichnung}
+                          </option>
+                        ))}
+                      </optgroup>
                     ))}
                   </select>
                   <input
