@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -9,20 +9,17 @@ html, body, #root {
 }
 
 body {
-  @apply bg-papier text-tanne-950 font-sans antialiased;
-  background-image:
-    radial-gradient(circle at 1px 1px, rgba(28, 51, 32, 0.06) 1px, transparent 0);
-  background-size: 22px 22px;
+  @apply bg-papier text-tanne-900 font-sans antialiased;
 }
 
 ::selection {
   background-color: theme('colors.moos');
-  color: theme('colors.papier');
+  color: #ffffff;
 }
 
 /* Sichtbarer Fokus-Ring für Tastaturbedienung */
 :focus-visible {
-  outline: 2px solid theme('colors.rost');
+  outline: 2px solid theme('colors.moos');
   outline-offset: 2px;
 }
 
