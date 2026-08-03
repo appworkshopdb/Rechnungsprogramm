@@ -27,6 +27,10 @@ export default function CreditNotesPage() {
     laden();
   }, []);
 
+  // Entwürfe links, freigegebene rechts — jeweils neueste zuerst.
+  const entwuerfe = gutschriften.filter((g) => g.status === 'entwurf');
+  const freigegebene = gutschriften.filter((g) => g.status !== 'entwurf');
+
   return (
     <div className="p-4 sm:p-8 max-w-5xl">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-6">
@@ -49,46 +53,64 @@ export default function CreditNotesPage() {
           Noch keine Gutschriften vorhanden.
         </div>
       ) : (
-        <div className="rounded-xl border border-tanne-900/10 bg-white/60 overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead className="bg-tanne-900/5 text-tanne-900/70 text-xs uppercase tracking-wide">
-              <tr>
-                <th className="text-left px-4 py-3 font-medium">Nummer</th>
-                <th className="text-left px-4 py-3 font-medium">Kunde</th>
-                <th className="text-left px-4 py-3 font-medium">Datum</th>
-                <th className="text-left px-4 py-3 font-medium">Status</th>
-                <th></th>
-              </tr>
-            </thead>
-            <tbody>
-              {gutschriften.map((g) => (
-                <tr key={g.id} className="border-t border-tanne-900/5 hover:bg-tanne-900/[0.03]">
-                  <td className="px-4 py-3 font-mono text-xs text-tanne-900">
-                    {g.nummer || <span className="text-tanne-700/40">— Entwurf —</span>}
-                  </td>
-                  <td className="px-4 py-3 text-tanne-900/90">{g.customers?.name || '–'}</td>
-                  <td className="px-4 py-3 text-tanne-900/80">
-                    {g.gutschriftdatum ? new Date(g.gutschriftdatum).toLocaleDateString('de-DE') : '–'}
-                  </td>
-                  <td className="px-4 py-3">
-                    <span
-                      className={`text-xs font-medium px-2 py-0.5 rounded-full ${STATUS_LABEL[g.status].klasse}`}
-                    >
-                      {STATUS_LABEL[g.status].text}
-                    </span>
-                  </td>
-                  <td className="px-4 py-3 text-right">
-                    <Link
-                      to={`/gutschriften/${g.id}`}
-                      className="text-tanne-700 hover:underline text-xs font-medium"
-                    >
-                      {g.status === 'entwurf' ? 'Bearbeiten' : 'Ansehen'}
-                    </Link>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <SpalteGutschriften titel="Entwürfe" eintraege={entwuerfe} leerText="Keine Entwürfe." />
+          <SpalteGutschriften
+            titel="Freigegeben"
+            eintraege={freigegebene}
+            leerText="Noch keine freigegebenen Gutschriften."
+          />
+        </div>
+      )}
+    </div>
+  );
+}
+
+function SpalteGutschriften({ titel, eintraege, leerText }) {
+  return (
+    <div>
+      <h2 className="text-xs font-semibold text-tanne-700 uppercase tracking-wide mb-2">
+        {titel} <span className="text-tanne-700/50">({eintraege.length})</span>
+      </h2>
+      {eintraege.length === 0 ? (
+        <div className="rounded-xl border border-dashed border-tanne-900/15 p-6 text-center text-sm text-tanne-700/50">
+          {leerText}
+        </div>
+      ) : (
+        <div className="space-y-2">
+          {eintraege.map((g) => (
+            <div
+              key={g.id}
+              className="rounded-xl border border-tanne-900/10 bg-white/60 px-4 py-3 hover:bg-tanne-900/[0.03]"
+            >
+              <div className="flex items-center justify-between gap-2">
+                <div className="min-w-0">
+                  <p className="font-medium text-tanne-900 truncate">{g.customers?.name || '–'}</p>
+                  <p className="text-xs text-tanne-700/60 font-mono mt-0.5">
+                    {g.nummer || '— Entwurf —'}
+                    {g.gutschriftdatum && (
+                      <span className="ml-2">
+                        {new Date(g.gutschriftdatum).toLocaleDateString('de-DE')}
+                      </span>
+                    )}
+                  </p>
+                </div>
+                <span
+                  className={`shrink-0 text-xs font-medium px-2 py-0.5 rounded-full ${STATUS_LABEL[g.status].klasse}`}
+                >
+                  {STATUS_LABEL[g.status].text}
+                </span>
+              </div>
+              <div className="flex items-center justify-end mt-2">
+                <Link
+                  to={`/gutschriften/${g.id}`}
+                  className="text-tanne-700 hover:underline text-xs font-medium"
+                >
+                  {g.status === 'entwurf' ? 'Bearbeiten' : 'Ansehen'}
+                </Link>
+              </div>
+            </div>
+          ))}
         </div>
       )}
     </div>

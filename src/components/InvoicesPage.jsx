@@ -32,6 +32,11 @@ export default function InvoicesPage() {
     laden();
   }, []);
 
+  // Entwürfe links, freigegebene/bezahlte/stornierte rechts — jeweils
+  // neueste zuerst (die Grundabfrage sortiert bereits nach created_at desc).
+  const entwuerfe = rechnungen.filter((r) => r.status === 'entwurf');
+  const freigegebene = rechnungen.filter((r) => r.status !== 'entwurf');
+
   async function markiereAlsBezahlt(id) {
     const { error } = await supabase
       .from('invoices')
@@ -121,56 +126,80 @@ export default function InvoicesPage() {
           Noch keine Rechnungen vorhanden. Leg mit „+ Neue Rechnung" die erste an.
         </div>
       ) : (
-        <div className="rounded-xl border border-tanne-900/10 bg-white/60 overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead className="bg-tanne-900/5 text-tanne-900/70 text-xs uppercase tracking-wide">
-              <tr>
-                <th className="text-left px-4 py-3 font-medium">Nummer</th>
-                <th className="text-left px-4 py-3 font-medium">Kunde</th>
-                <th className="text-left px-4 py-3 font-medium">Datum</th>
-                <th className="text-left px-4 py-3 font-medium">Status</th>
-                <th></th>
-              </tr>
-            </thead>
-            <tbody>
-              {rechnungen.map((r) => (
-                <tr key={r.id} className="border-t border-tanne-900/5 hover:bg-tanne-900/[0.03]">
-                  <td className="px-4 py-3 font-mono text-xs text-tanne-900">
-                    {r.nummer || <span className="text-tanne-700/40">— Entwurf —</span>}
-                  </td>
-                  <td className="px-4 py-3 text-tanne-900/90">{r.customers?.name || '–'}</td>
-                  <td className="px-4 py-3 text-tanne-900/80">
-                    {r.rechnungsdatum
-                      ? new Date(r.rechnungsdatum).toLocaleDateString('de-DE')
-                      : '–'}
-                  </td>
-                  <td className="px-4 py-3">
-                    <span
-                      className={`text-xs font-medium px-2 py-0.5 rounded-full ${STATUS_LABEL[r.status].klasse}`}
-                    >
-                      {STATUS_LABEL[r.status].text}
-                    </span>
-                  </td>
-                  <td className="px-4 py-3 text-right space-x-3">
-                    {istAdminOderBuchhaltung && r.status === 'freigegeben' && (
-                      <button
-                        onClick={() => markiereAlsBezahlt(r.id)}
-                        className="text-tanne-700 hover:underline text-xs font-medium"
-                      >
-                        Als bezahlt markieren
-                      </button>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <SpalteRechnungen
+            titel="Entwürfe"
+            rechnungen={entwuerfe}
+            leerText="Keine Entwürfe."
+            istAdminOderBuchhaltung={istAdminOderBuchhaltung}
+            markiereAlsBezahlt={markiereAlsBezahlt}
+          />
+          <SpalteRechnungen
+            titel="Freigegeben & bezahlt"
+            rechnungen={freigegebene}
+            leerText="Noch keine freigegebenen Rechnungen."
+            istAdminOderBuchhaltung={istAdminOderBuchhaltung}
+            markiereAlsBezahlt={markiereAlsBezahlt}
+          />
+        </div>
+      )}
+    </div>
+  );
+}
+
+function SpalteRechnungen({ titel, rechnungen, leerText, istAdminOderBuchhaltung, markiereAlsBezahlt }) {
+  return (
+    <div>
+      <h2 className="text-xs font-semibold text-tanne-700 uppercase tracking-wide mb-2">
+        {titel} <span className="text-tanne-700/50">({rechnungen.length})</span>
+      </h2>
+      {rechnungen.length === 0 ? (
+        <div className="rounded-xl border border-dashed border-tanne-900/15 p-6 text-center text-sm text-tanne-700/50">
+          {leerText}
+        </div>
+      ) : (
+        <div className="space-y-2">
+          {rechnungen.map((r) => (
+            <div
+              key={r.id}
+              className="rounded-xl border border-tanne-900/10 bg-white/60 px-4 py-3 hover:bg-tanne-900/[0.03]"
+            >
+              <div className="flex items-center justify-between gap-2">
+                <div className="min-w-0">
+                  <p className="font-medium text-tanne-900 truncate">{r.customers?.name || '–'}</p>
+                  <p className="text-xs text-tanne-700/60 font-mono mt-0.5">
+                    {r.nummer || '— Entwurf —'}
+                    {r.rechnungsdatum && (
+                      <span className="ml-2">
+                        {new Date(r.rechnungsdatum).toLocaleDateString('de-DE')}
+                      </span>
                     )}
-                    <Link
-                      to={`/rechnungen/${r.id}`}
-                      className="text-tanne-700 hover:underline text-xs font-medium"
-                    >
-                      {r.status === 'entwurf' ? 'Bearbeiten' : 'Ansehen'}
-                    </Link>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+                  </p>
+                </div>
+                <span
+                  className={`shrink-0 text-xs font-medium px-2 py-0.5 rounded-full ${STATUS_LABEL[r.status].klasse}`}
+                >
+                  {STATUS_LABEL[r.status].text}
+                </span>
+              </div>
+              <div className="flex items-center justify-end gap-3 mt-2">
+                {istAdminOderBuchhaltung && r.status === 'freigegeben' && (
+                  <button
+                    onClick={() => markiereAlsBezahlt(r.id)}
+                    className="text-tanne-700 hover:underline text-xs font-medium"
+                  >
+                    Als bezahlt markieren
+                  </button>
+                )}
+                <Link
+                  to={`/rechnungen/${r.id}`}
+                  className="text-tanne-700 hover:underline text-xs font-medium"
+                >
+                  {r.status === 'entwurf' ? 'Bearbeiten' : 'Ansehen'}
+                </Link>
+              </div>
+            </div>
+          ))}
         </div>
       )}
     </div>
