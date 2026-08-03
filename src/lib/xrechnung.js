@@ -1,8 +1,12 @@
 // Erzeugt eine XRechnung-konforme XML-Datei (UBL 2.1 Invoice-Syntax) aus
-// den Rechnungsdaten. Deckt die EN16931-Kernfelder ab, ist aber eine
-// vereinfachte Implementierung für den MVP — vor dem produktiven Versand
-// an öffentliche Auftraggeber unbedingt mit einem offiziellen Validator
-// prüfen (z.B. KoSIT-Validator, siehe README).
+// den Rechnungsdaten. Deckt die EN16931-Kernfelder ab sowie
+// forstspezifische Besonderheiten (Durchschnittssatzbesteuerung nach
+// § 24 UStG, genormte Mengeneinheiten, Self-Billing/Gutschrift, Skonto).
+//
+// WICHTIG: Dies ist eine sorgfältige, aber nicht offiziell zertifizierte
+// Implementierung. Vor dem produktiven Versand jede Datei mit dem
+// KoSIT-Validator prüfen und die steuerliche Behandlung (v.a. die Sätze
+// 5,5 % / 7,8 % und die Kategorie-Codes) mit dem Steuerberater abstimmen.
 
 function escapeXml(text) {
   if (text === null || text === undefined) return '';
@@ -14,18 +18,49 @@ function escapeXml(text) {
     .replace(/'/g, '&apos;');
 }
 
-// Grobe Zuordnung interner Einheiten auf UN/CEFACT Recommendation 20 Codes.
-// "festmeter" hat keinen exakten offiziellen Code — MTQ (Kubikmeter) ist
-// die gebräuchlichste Näherung in der Forstbranche.
+// Interne Einheit -> genormter Code nach UN/ECE Recommendation 20.
+// Quelle: Anforderungsdokument E-Rechnung (Forstwirtschaft).
 const EINHEIT_CODE = {
   stunde: 'HUR',
   tag: 'DAY',
-  festmeter: 'MTQ',
-  pauschale: 'C62', // "Stück/Einheit" als generischer Fallback
+  festmeter: 'M3Q', // Festmeter/Raummeter/Kubikmeter -> M3Q
+  raummeter: 'M3Q',
+  kubikmeter: 'M3Q',
+  hektar: 'HAR',
+  kilogramm: 'KGM',
+  tonne: 'TNE',
   km: 'KMT',
+  pauschale: 'C62',
   stueck: 'C62',
   frei: 'C62',
 };
+
+// Steuersatz -> UStG-/EN16931-Kategorie-Code + gesetzlicher Hinweistext (BT-120).
+// - 5,5 %  Forstwirtschaftliche Erzeugnisse (Durchschnittssatz § 24 UStG)
+// - 7,8 %  Selbstständige forstliche Dienstleistungen (Durchschnittssatz § 24 UStG)
+// - 19 %/7 % Regelbesteuerung
+// - 0 %    steuerfrei
+// Für die Durchschnittssatzbesteuerung wird Kategorie-Code "AA" (ermäßigt)
+// verwendet, sonst "S" (Standard) bzw. "Z" (Nullsatz).
+function steuerKategorie(satz) {
+  const s = Number(satz);
+  if (s === 5.5) {
+    return {
+      code: 'AA',
+      hinweis: 'Durchschnittssatzbesteuerung § 24 UStG (forstwirtschaftliche Erzeugnisse)',
+    };
+  }
+  if (s === 7.8) {
+    return {
+      code: 'AA',
+      hinweis: 'Durchschnittssatzbesteuerung § 24 UStG (forstliche Dienstleistung)',
+    };
+  }
+  if (s === 0) {
+    return { code: 'Z', hinweis: 'Steuerfreie Leistung' };
+  }
+  return { code: 'S', hinweis: '' };
+}
 
 function summenBerechnen(items) {
   const netto = items.reduce((s, p) => s + Number(p.menge) * Number(p.einzelpreis), 0);
@@ -41,34 +76,48 @@ function summenBerechnen(items) {
 }
 
 /**
- * @param {object} invoice   Zeile aus `invoices` (nummer, rechnungsdatum, …)
+ * @param {object} invoice   Zeile aus `invoices` (nummer, rechnungsdatum, skonto…)
  * @param {object[]} items   Zeilen aus `invoice_items`
  * @param {object} customer  Zeile aus `customers`
  * @param {object} company   Zeile aus `company_settings`
+ * @param {object} [optionen]
+ * @param {boolean} [optionen.selfBilling]  true = Gutschrift (Self-Billing, Code 389)
  * @returns {string} XML-Dokument als String
  */
-export function xrechnungXmlErzeugen(invoice, items, customer, company) {
+export function xrechnungXmlErzeugen(invoice, items, customer, company, optionen = {}) {
+  const selfBilling = optionen.selfBilling === true;
   const summen = summenBerechnen(items);
   const waehrung = 'EUR';
   const datum = invoice.rechnungsdatum || new Date().toISOString().slice(0, 10);
 
-  const buyerReference =
-    customer.kundentyp === 'oeffentlich' && customer.leitweg_id
-      ? customer.leitweg_id
-      : customer.name;
+  // BT-3: 380 = normale Rechnung, 389 = Self-billed invoice (Gutschrift Holzverkauf)
+  const invoiceTypeCode = selfBilling ? '389' : '380';
 
+  // BT-10 Käuferreferenz: bei öffentlichen Auftraggebern die Leitweg-ID,
+  // sonst der Kundenname. Nie leer lassen (sonst Validierungsfehler) —
+  // Platzhalter "-", falls nichts vorhanden.
+  const buyerReference =
+    (customer.kundentyp === 'oeffentlich' && customer.leitweg_id
+      ? customer.leitweg_id
+      : customer.name) || '-';
+
+  // Steueraufschlüsselung je Satz inkl. Kategorie-Code + BT-120-Hinweis
   const taxSubtotals = Object.entries(summen.ustGruppen)
     .map(([satz, betrag]) => {
+      const kat = steuerKategorie(satz);
       const zeilenNettoFuerSatz = items
         .filter((p) => Number(p.ust_satz) === Number(satz))
         .reduce((s, p) => s + Number(p.menge) * Number(p.einzelpreis), 0);
+      const hinweisZeile = kat.hinweis
+        ? `\n        <cbc:TaxExemptionReason>${escapeXml(kat.hinweis)}</cbc:TaxExemptionReason>`
+        : '';
       return `
     <cac:TaxSubtotal>
       <cbc:TaxableAmount currencyID="${waehrung}">${zeilenNettoFuerSatz.toFixed(2)}</cbc:TaxableAmount>
       <cbc:TaxAmount currencyID="${waehrung}">${betrag.toFixed(2)}</cbc:TaxAmount>
       <cac:TaxCategory>
-        <cbc:ID>S</cbc:ID>
-        <cbc:Percent>${Number(satz).toFixed(2)}</cbc:Percent>
+        <cbc:ID>${kat.code}</cbc:ID>
+        <cbc:Percent>${Number(satz).toFixed(2)}</cbc:Percent>${hinweisZeile}
         <cac:TaxScheme><cbc:ID>VAT</cbc:ID></cac:TaxScheme>
       </cac:TaxCategory>
     </cac:TaxSubtotal>`;
@@ -79,6 +128,7 @@ export function xrechnungXmlErzeugen(invoice, items, customer, company) {
     .map((p, idx) => {
       const zeilenNetto = Number(p.menge) * Number(p.einzelpreis);
       const code = EINHEIT_CODE[p.einheit] || 'C62';
+      const kat = steuerKategorie(p.ust_satz);
       return `
   <cac:InvoiceLine>
     <cbc:ID>${idx + 1}</cbc:ID>
@@ -87,7 +137,7 @@ export function xrechnungXmlErzeugen(invoice, items, customer, company) {
     <cac:Item>
       <cbc:Name>${escapeXml(p.bezeichnung)}</cbc:Name>
       <cac:ClassifiedTaxCategory>
-        <cbc:ID>S</cbc:ID>
+        <cbc:ID>${kat.code}</cbc:ID>
         <cbc:Percent>${Number(p.ust_satz).toFixed(2)}</cbc:Percent>
         <cac:TaxScheme><cbc:ID>VAT</cbc:ID></cac:TaxScheme>
       </cac:ClassifiedTaxCategory>
@@ -99,6 +149,24 @@ export function xrechnungXmlErzeugen(invoice, items, customer, company) {
     })
     .join('');
 
+  // Zahlungsbedingungen / Skonto (BT-20) im vordefinierten Segmentformat,
+  // nur wenn Skonto-Angaben vorhanden sind.
+  let paymentTerms = '';
+  if (invoice.skonto_tage && invoice.skonto_prozent) {
+    const skontoText = `#SKONTO:TAGE=${invoice.skonto_tage};PROZENT=${Number(
+      invoice.skonto_prozent
+    ).toFixed(2)}#`;
+    paymentTerms = `
+  <cac:PaymentTerms>
+    <cbc:Note>${escapeXml(skontoText)}</cbc:Note>
+  </cac:PaymentTerms>`;
+  }
+
+  // Bei Gutschrift (Self-Billing) zusätzlicher rechtlicher Hinweis "Gutschrift"
+  const gutschriftNote = selfBilling
+    ? `\n  <cbc:Note>Gutschrift</cbc:Note>`
+    : '';
+
   return `<?xml version="1.0" encoding="UTF-8"?>
 <Invoice xmlns="urn:oasis:names:specification:ubl:schema:xsd:Invoice-2"
          xmlns:cac="urn:oasis:names:specification:ubl:schema:xsd:CommonAggregateComponents-2"
@@ -106,7 +174,7 @@ export function xrechnungXmlErzeugen(invoice, items, customer, company) {
   <cbc:CustomizationID>urn:cen.eu:en16931:2017#compliant#urn:xoev-de:kosit:standard:xrechnung_2.3</cbc:CustomizationID>
   <cbc:ID>${escapeXml(invoice.nummer)}</cbc:ID>
   <cbc:IssueDate>${datum}</cbc:IssueDate>
-  <cbc:InvoiceTypeCode>380</cbc:InvoiceTypeCode>
+  <cbc:InvoiceTypeCode>${invoiceTypeCode}</cbc:InvoiceTypeCode>${gutschriftNote}
   <cbc:DocumentCurrencyCode>${waehrung}</cbc:DocumentCurrencyCode>
   <cbc:BuyerReference>${escapeXml(buyerReference)}</cbc:BuyerReference>
   <cac:AccountingSupplierParty>
@@ -148,7 +216,7 @@ export function xrechnungXmlErzeugen(invoice, items, customer, company) {
     <cac:PayeeFinancialAccount>
       <cbc:ID>${escapeXml(company.iban)}</cbc:ID>
     </cac:PayeeFinancialAccount>
-  </cac:PaymentMeans>
+  </cac:PaymentMeans>${paymentTerms}
   <cac:TaxTotal>
     <cbc:TaxAmount currencyID="${waehrung}">${summen.ustGesamt.toFixed(2)}</cbc:TaxAmount>${taxSubtotals}
   </cac:TaxTotal>
