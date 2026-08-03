@@ -23,9 +23,9 @@ function escapeXml(text) {
 const EINHEIT_CODE = {
   stunde: 'HUR',
   tag: 'DAY',
-  festmeter: 'M3Q', // Festmeter/Raummeter/Kubikmeter -> M3Q
-  raummeter: 'M3Q',
-  kubikmeter: 'M3Q',
+  festmeter: 'MTQ', // Festmeter/Raummeter/Kubikmeter -> MTQ (Kubikmeter, offizieller UN/ECE-Code)
+  raummeter: 'MTQ',
+  kubikmeter: 'MTQ',
   hektar: 'HAR',
   kilogramm: 'KGM',
   tonne: 'TNE',
@@ -167,18 +167,32 @@ export function xrechnungXmlErzeugen(invoice, items, customer, company, optionen
     ? `\n  <cbc:Note>Gutschrift</cbc:Note>`
     : '';
 
+  // Fälligkeitsdatum (BT-9): Rechnungsdatum + Zahlungsziel-Tage.
+  // Pflicht nach BR-CO-25 (entweder DueDate oder PaymentTerms). Ohne
+  // Angabe Standard von 14 Tagen.
+  const zahlungszielTage = Number(invoice.zahlungsziel_tage) || 14;
+  const faelligkeit = new Date(datum);
+  faelligkeit.setDate(faelligkeit.getDate() + zahlungszielTage);
+  const dueDate = faelligkeit.toISOString().slice(0, 10);
+
   return `<?xml version="1.0" encoding="UTF-8"?>
 <Invoice xmlns="urn:oasis:names:specification:ubl:schema:xsd:Invoice-2"
          xmlns:cac="urn:oasis:names:specification:ubl:schema:xsd:CommonAggregateComponents-2"
          xmlns:cbc="urn:oasis:names:specification:ubl:schema:xsd:CommonBasicComponents-2">
-  <cbc:CustomizationID>urn:cen.eu:en16931:2017#compliant#urn:xoev-de:kosit:standard:xrechnung_2.3</cbc:CustomizationID>
+  <cbc:CustomizationID>urn:cen.eu:en16931:2017#compliant#urn:xeinkauf.de:kosit:xrechnung_3.0</cbc:CustomizationID>
+  <cbc:ProfileID>urn:fdc:peppol.eu:2017:poacc:billing:01:1.0</cbc:ProfileID>
   <cbc:ID>${escapeXml(invoice.nummer)}</cbc:ID>
   <cbc:IssueDate>${datum}</cbc:IssueDate>
+  <cbc:DueDate>${dueDate}</cbc:DueDate>
   <cbc:InvoiceTypeCode>${invoiceTypeCode}</cbc:InvoiceTypeCode>${gutschriftNote}
   <cbc:DocumentCurrencyCode>${waehrung}</cbc:DocumentCurrencyCode>
   <cbc:BuyerReference>${escapeXml(buyerReference)}</cbc:BuyerReference>
   <cac:AccountingSupplierParty>
     <cac:Party>
+      <cbc:EndpointID schemeID="EM">${escapeXml(company.email || 'info@example.de')}</cbc:EndpointID>
+      <cac:PartyName>
+        <cbc:Name>${escapeXml(company.firmenname)}</cbc:Name>
+      </cac:PartyName>
       <cac:PostalAddress>
         <cbc:StreetName>${escapeXml(company.strasse)}</cbc:StreetName>
         <cbc:CityName>${escapeXml(company.ort)}</cbc:CityName>
@@ -193,13 +207,18 @@ export function xrechnungXmlErzeugen(invoice, items, customer, company, optionen
         <cbc:RegistrationName>${escapeXml(company.firmenname)}</cbc:RegistrationName>
       </cac:PartyLegalEntity>
       <cac:Contact>
-        <cbc:Telephone>${escapeXml(company.telefon)}</cbc:Telephone>
-        <cbc:ElectronicMail>${escapeXml(company.email)}</cbc:ElectronicMail>
+        <cbc:Name>${escapeXml(company.firmenname)}</cbc:Name>
+        <cbc:Telephone>${escapeXml(company.telefon || '000000')}</cbc:Telephone>
+        <cbc:ElectronicMail>${escapeXml(company.email || 'info@example.de')}</cbc:ElectronicMail>
       </cac:Contact>
     </cac:Party>
   </cac:AccountingSupplierParty>
   <cac:AccountingCustomerParty>
     <cac:Party>
+      <cbc:EndpointID schemeID="EM">${escapeXml(customer.email || 'kunde@example.de')}</cbc:EndpointID>
+      <cac:PartyName>
+        <cbc:Name>${escapeXml(customer.name)}</cbc:Name>
+      </cac:PartyName>
       <cac:PostalAddress>
         <cbc:StreetName>${escapeXml(customer.strasse)}</cbc:StreetName>
         <cbc:CityName>${escapeXml(customer.ort)}</cbc:CityName>

@@ -6,9 +6,9 @@
 export const EINHEITEN = [
   { value: 'stunde', label: 'Stunde', code: 'HUR' },
   { value: 'tag', label: 'Tag', code: 'DAY' },
-  { value: 'festmeter', label: 'Festmeter (fm)', code: 'M3Q' },
-  { value: 'raummeter', label: 'Raummeter (rm)', code: 'M3Q' },
-  { value: 'kubikmeter', label: 'Kubikmeter (m³)', code: 'M3Q' },
+  { value: 'festmeter', label: 'Festmeter (fm)', code: 'MTQ' },
+  { value: 'raummeter', label: 'Raummeter (rm)', code: 'MTQ' },
+  { value: 'kubikmeter', label: 'Kubikmeter (m³)', code: 'MTQ' },
   { value: 'hektar', label: 'Hektar (ha)', code: 'HAR' },
   { value: 'kilogramm', label: 'Kilogramm (kg)', code: 'KGM' },
   { value: 'tonne', label: 'Tonne (t)', code: 'TNE' },
