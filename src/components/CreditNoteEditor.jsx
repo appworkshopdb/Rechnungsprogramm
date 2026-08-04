@@ -249,12 +249,20 @@ export default function CreditNoteEditor() {
             </button>
           )}
           {gesperrt && (
-            <button
-              onClick={() => window.print()}
-              className="rounded-lg bg-tanne-800 text-papier text-sm font-medium px-4 py-2 hover:bg-tanne-700"
-            >
-              Drucken / Als PDF speichern
-            </button>
+            <>
+              <button
+                onClick={() => window.print()}
+                className="rounded-lg border border-tanne-900/20 text-tanne-900 text-sm font-medium px-4 py-2 hover:bg-tanne-900/5"
+              >
+                PDF herunterladen
+              </button>
+              <button
+                onClick={() => window.print()}
+                className="rounded-lg bg-tanne-800 text-papier text-sm font-medium px-4 py-2 hover:bg-tanne-700"
+              >
+                Drucken
+              </button>
+            </>
           )}
         </div>
       </div>
