@@ -44,6 +44,7 @@ export default function DeliveryNoteEditor() {
   const [positionen, setPositionen] = useState([neueLeerePosition()]);
   const [ladeVorgang, setLadeVorgang] = useState(true);
   const [speichertGerade, setSpeichertGerade] = useState(false);
+  const [abschlussDialogOffen, setAbschlussDialogOffen] = useState(false);
   const [fehler, setFehler] = useState(null);
 
   const gesperrt = lieferschein.status !== 'entwurf';
@@ -224,7 +225,7 @@ export default function DeliveryNoteEditor() {
                 Entwurf speichern
               </button>
               <button
-                onClick={() => speichern({ alsAbschluss: true })}
+                onClick={() => setAbschlussDialogOffen(true)}
                 disabled={speichertGerade}
                 className="rounded-lg bg-tanne-800 text-papier text-sm font-medium px-4 py-2 hover:bg-tanne-700 disabled:opacity-60"
               >
@@ -412,6 +413,79 @@ export default function DeliveryNoteEditor() {
           <AttachmentsPanel entityType="delivery_note" entityId={lieferschein.id} />
         </div>
       </div>
+
+      {abschlussDialogOffen && (
+        <div className="fixed inset-0 bg-tanne-950/40 flex items-center justify-center p-4 z-30 no-print">
+          <div className="bg-papier rounded-xl shadow-lg w-full max-w-xl p-6 max-h-[90vh] overflow-y-auto">
+            <h2 className="font-display text-lg font-semibold text-tanne-900 mb-1">
+              Lieferschein prüfen und abschließen
+            </h2>
+            <p className="text-sm text-tanne-700/70 mb-4">
+              Bitte kontrolliere alle Angaben. Nach dem Abschließen wird die
+              Lieferschein-Nummer vergeben und der Lieferschein ist nicht mehr änderbar.
+            </p>
+
+            <div className="rounded-lg border border-tanne-900/10 bg-white/70 divide-y divide-tanne-900/5 text-sm mb-3">
+              <div className="flex justify-between px-4 py-2">
+                <span className="text-tanne-700/70">Kunde</span>
+                <span className="font-medium text-tanne-900 text-right">
+                  {kunden.find((k) => k.id === lieferschein.customer_id)?.name || '⚠ fehlt'}
+                </span>
+              </div>
+              <div className="flex justify-between px-4 py-2">
+                <span className="text-tanne-700/70">Lieferdatum</span>
+                <span className="text-tanne-900 text-right">
+                  {lieferschein.lieferdatum
+                    ? new Date(lieferschein.lieferdatum).toLocaleDateString('de-DE')
+                    : '⚠ nicht gesetzt'}
+                </span>
+              </div>
+            </div>
+
+            <div className="rounded-lg border border-tanne-900/10 bg-white/70 overflow-hidden mb-4">
+              <table className="w-full text-sm">
+                <thead className="bg-tanne-900/5 text-tanne-900/60 text-xs uppercase tracking-wide">
+                  <tr>
+                    <th className="text-left px-3 py-2 font-medium">Position</th>
+                    <th className="text-right px-3 py-2 font-medium">Menge</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {positionen
+                    .filter((p) => p.bezeichnung.trim() !== '')
+                    .map((p, idx) => (
+                      <tr key={idx} className="border-t border-tanne-900/5">
+                        <td className="px-3 py-2 text-tanne-900">{p.bezeichnung}</td>
+                        <td className="px-3 py-2 text-right text-tanne-900/80">
+                          {p.menge} {p.einheit}
+                        </td>
+                      </tr>
+                    ))}
+                </tbody>
+              </table>
+            </div>
+
+            <div className="flex justify-end gap-2">
+              <button
+                onClick={() => setAbschlussDialogOffen(false)}
+                className="rounded-lg px-4 py-2 text-sm font-medium text-tanne-900/70 hover:bg-tanne-900/5"
+              >
+                Zurück &amp; korrigieren
+              </button>
+              <button
+                onClick={() => {
+                  setAbschlussDialogOffen(false);
+                  speichern({ alsAbschluss: true });
+                }}
+                disabled={speichertGerade}
+                className="rounded-lg bg-moos text-white text-sm font-medium px-4 py-2 hover:opacity-90 disabled:opacity-60"
+              >
+                Ja, verbindlich abschließen
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

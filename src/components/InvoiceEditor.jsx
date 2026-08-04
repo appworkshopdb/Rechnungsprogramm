@@ -65,6 +65,7 @@ export default function InvoiceEditor() {
   const [positionen, setPositionen] = useState([neueLeerePosition()]);
   const [ladeVorgang, setLadeVorgang] = useState(true);
   const [speichertGerade, setSpeichertGerade] = useState(false);
+  const [freigabeDialogOffen, setFreigabeDialogOffen] = useState(false);
   const [fehler, setFehler] = useState(null);
   const [hinweis, setHinweis] = useState(null);
 
@@ -356,7 +357,7 @@ export default function InvoiceEditor() {
           )}
           {!gesperrt && istAdminOderBuchhaltung && (
             <button
-              onClick={() => speichern({ alsFreigabe: true })}
+              onClick={() => setFreigabeDialogOffen(true)}
               disabled={speichertGerade}
               className="rounded-lg bg-tanne-800 text-papier text-sm font-medium px-4 py-2 hover:bg-tanne-700 disabled:opacity-60"
             >
@@ -720,6 +721,112 @@ export default function InvoiceEditor() {
           <AttachmentsPanel entityType="invoice" entityId={rechnung.id} />
         </div>
       </div>
+
+      {freigabeDialogOffen && (
+        <div className="fixed inset-0 bg-tanne-950/40 flex items-center justify-center p-4 z-30 no-print">
+          <div className="bg-papier rounded-xl shadow-lg w-full max-w-xl p-6 max-h-[90vh] overflow-y-auto">
+            <h2 className="font-display text-lg font-semibold text-tanne-900 mb-1">
+              Rechnung prüfen und freigeben
+            </h2>
+            <p className="text-sm text-tanne-700/70 mb-4">
+              Bitte kontrolliere alle Angaben. Nach der Freigabe wird die
+              Rechnungsnummer vergeben und die Rechnung ist gesetzlich nicht mehr
+              änderbar (GoBD).
+            </p>
+
+            <div className="rounded-lg border border-tanne-900/10 bg-white/70 divide-y divide-tanne-900/5 text-sm mb-3">
+              <div className="flex justify-between px-4 py-2">
+                <span className="text-tanne-700/70">Kunde</span>
+                <span className="font-medium text-tanne-900 text-right">
+                  {kunden.find((k) => k.id === rechnung.customer_id)?.name || '⚠ fehlt'}
+                </span>
+              </div>
+              <div className="flex justify-between px-4 py-2">
+                <span className="text-tanne-700/70">Rechnungsdatum</span>
+                <span className="text-tanne-900 text-right">
+                  {rechnung.rechnungsdatum
+                    ? new Date(rechnung.rechnungsdatum).toLocaleDateString('de-DE')
+                    : '⚠ nicht gesetzt'}
+                </span>
+              </div>
+              <div className="flex justify-between px-4 py-2">
+                <span className="text-tanne-700/70">Preiseingabe</span>
+                <span className="text-tanne-900 text-right">
+                  {rechnung.preis_modus === 'brutto' ? 'Brutto' : 'Netto'}
+                </span>
+              </div>
+            </div>
+
+            {/* Positionen zur Kontrolle */}
+            <div className="rounded-lg border border-tanne-900/10 bg-white/70 overflow-hidden mb-3">
+              <table className="w-full text-sm">
+                <thead className="bg-tanne-900/5 text-tanne-900/60 text-xs uppercase tracking-wide">
+                  <tr>
+                    <th className="text-left px-3 py-2 font-medium">Position</th>
+                    <th className="text-right px-3 py-2 font-medium">Menge</th>
+                    <th className="text-right px-3 py-2 font-medium">Einzelpr.</th>
+                    <th className="text-right px-3 py-2 font-medium">USt.</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {positionen
+                    .filter((p) => p.bezeichnung.trim() !== '')
+                    .map((p, idx) => (
+                      <tr key={idx} className="border-t border-tanne-900/5">
+                        <td className="px-3 py-2 text-tanne-900">{p.bezeichnung}</td>
+                        <td className="px-3 py-2 text-right text-tanne-900/80">
+                          {p.menge} {EINHEIT_KURZ[p.einheit] || p.einheit}
+                        </td>
+                        <td className="px-3 py-2 text-right text-tanne-900/80">
+                          {Number(p.einzelpreis).toFixed(2)} €
+                        </td>
+                        <td className="px-3 py-2 text-right text-tanne-900/80">{p.ust_satz}%</td>
+                      </tr>
+                    ))}
+                </tbody>
+              </table>
+            </div>
+
+            <div className="rounded-lg bg-tanne-900/[0.03] px-4 py-3 text-sm mb-4">
+              <div className="flex justify-between text-tanne-700/70">
+                <span>Netto</span>
+                <span>{summen.netto.toFixed(2)} €</span>
+              </div>
+              {Object.entries(summen.ustGruppen).map(([satz, betrag]) => (
+                <div key={satz} className="flex justify-between text-tanne-700/70">
+                  <span>
+                    {summen.bruttoModus ? 'inkl.' : 'zzgl.'} {satz}% USt.
+                  </span>
+                  <span>{betrag.toFixed(2)} €</span>
+                </div>
+              ))}
+              <div className="flex justify-between font-semibold text-tanne-900 border-t border-tanne-900/15 pt-1 mt-1">
+                <span>Gesamtbetrag</span>
+                <span>{summen.brutto.toFixed(2)} €</span>
+              </div>
+            </div>
+
+            <div className="flex justify-end gap-2">
+              <button
+                onClick={() => setFreigabeDialogOffen(false)}
+                className="rounded-lg px-4 py-2 text-sm font-medium text-tanne-900/70 hover:bg-tanne-900/5"
+              >
+                Zurück &amp; korrigieren
+              </button>
+              <button
+                onClick={() => {
+                  setFreigabeDialogOffen(false);
+                  speichern({ alsFreigabe: true });
+                }}
+                disabled={speichertGerade}
+                className="rounded-lg bg-moos text-white text-sm font-medium px-4 py-2 hover:opacity-90 disabled:opacity-60"
+              >
+                Ja, verbindlich freigeben
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
